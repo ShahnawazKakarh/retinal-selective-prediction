@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "retinal-selective-prediction"
+version = "0.1.0"
+description = "Selective prediction with calibrated uncertainty for retinal disease screening"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Shahnawaz Khan", email = "ruthvik.j04@gmail.com" }]
+keywords = [
+    "medical-imaging",
+    "selective-prediction",
+    "uncertainty-quantification",
+    "retinal-disease",
+    "deep-learning",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["notebooks/*.ipynb", "data/", "experiments/"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",   # pycodestyle + pyflakes
+    "I",             # isort
+    "B",             # bugbear
+    "UP",            # pyupgrade
+    "SIM",           # simplify
+    "RUF",           # ruff-specific
+]
+ignore = ["E501"]    # line length handled by formatter
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-ra -q --strict-markers"
