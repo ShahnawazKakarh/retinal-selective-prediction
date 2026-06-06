@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+title: "Retinal Selective Prediction: Calibrated Uncertainty and Selective Classification for Diabetic Retinopathy Screening"
+message: "If you use this software in your research, please cite it as below."
+type: software
+authors:
+  - family-names: Khan
+    given-names: Shahnawaz
+    alias: ShahnawazKakarh
+    website: "https://www.skakarh.com"
+repository-code: "https://github.com/ShahnawazKakarh/retinal-selective-prediction"
+url: "https://www.skakarh.com"
+license: MIT
+keywords:
+  - medical-imaging
+  - diabetic-retinopathy
+  - selective-prediction
+  - uncertainty-quantification
+  - calibration
+  - deep-learning
+  - pytorch
+abstract: >-
+  Benchmark and selective-prediction analysis of deterministic, Bayesian,
+  and conformal uncertainty methods applied to retinal disease screening
+  (APTOS 2019, with external validation on Messidor-2 and IDRiD). The
+  central question is when a deep model should abstain and route a case
+  to a clinician, and how much that improves the safety / coverage
+  trade-off relative to a deterministic baseline.
+preferred-citation:
+  type: software
+  title: "Retinal Selective Prediction"
+  authors:
+    - family-names: Khan
+      given-names: Shahnawaz
+  year: 2026
+  url: "https://github.com/ShahnawazKakarh/retinal-selective-prediction"

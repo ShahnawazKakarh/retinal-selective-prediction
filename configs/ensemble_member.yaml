@@ -1,0 +1,54 @@
+# Single ensemble member config — same as baseline but with a different seed
+# and a parameterized name. Train 5 of these with seeds 1..5.
+#
+# Quick way to launch all 5 from a shell:
+#   for s in 1 2 3 4 5; do
+#       python scripts/train.py \
+#           --config configs/ensemble_member.yaml \
+#           --splits-dir data/splits/aptos2019 \
+#           --images-dir /path/to/images
+#       # then move experiments/runs/ensemble_member to ensemble_seed_${s}
+#   done
+# Better: override seed + name per run from the calling script.
+
+experiment:
+  name: ensemble_member       # override per-run (ensemble_seed_1, _2, ...)
+  tags: [ensemble, member, aptos]
+  seed: 1                     # override per-run (1..5)
+
+data:
+  dataset: aptos2019
+  root: ${oc.env:DATA_ROOT,./data}
+  image_size: 224
+  num_classes: 5
+  val_fraction: 0.15
+  test_fraction: 0.15
+  num_workers: 4
+
+model:
+  backbone: efficientnet_b0
+  pretrained: true
+  dropout: 0.3
+  num_classes: ${data.num_classes}
+
+training:
+  epochs: 30
+  batch_size: 32
+  optimizer: adamw
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  scheduler: cosine
+  warmup_epochs: 2
+  label_smoothing: 0.0
+  mixed_precision: true
+  gradient_clip: 1.0
+  early_stopping_patience: 7
+
+logging:
+  wandb_project: ${oc.env:WANDB_PROJECT,retinal-selective-prediction}
+  wandb_entity: ${oc.env:WANDB_ENTITY,null}
+  log_every_n_steps: 20
+  save_top_k: 1
+
+paths:
+  output_dir: experiments/runs/${experiment.name}
