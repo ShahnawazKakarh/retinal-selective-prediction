@@ -50,7 +50,15 @@ class SplitConformal:
         if np.isnan(self.q_hat):
             raise RuntimeError("Call calibrate() first.")
         threshold = 1.0 - self.q_hat
-        return [np.where(p >= threshold)[0] for p in probs]
+        sets: list[np.ndarray] = []
+        for p in probs:
+            included = np.where(p >= threshold)[0]
+            # Guarantee non-empty: if no class clears the threshold,
+            # fall back to the argmax. This preserves marginal coverage.
+            if included.size == 0:
+                included = np.array([int(np.argmax(p))], dtype=np.int64)
+            sets.append(included)
+        return sets
 
     def set_sizes(self, probs: np.ndarray) -> np.ndarray:
         return np.array([len(s) for s in self.predict_sets(probs)], dtype=np.int32)

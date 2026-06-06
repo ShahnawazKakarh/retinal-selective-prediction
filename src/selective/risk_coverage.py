@@ -65,7 +65,7 @@ def risk_coverage_curve(
 def aurc(correct: np.ndarray, uncertainty: np.ndarray) -> float:
     """Area Under the Risk–Coverage curve. Lower is better."""
     curve = risk_coverage_curve(correct, uncertainty)
-    return float(np.trapz(curve["risks"], curve["coverages"]))
+    return float(np.trapezoid(curve["risks"], curve["coverages"]))
 
 
 def selective_accuracy_at_coverage(
