@@ -1,0 +1,44 @@
+# Evidential Deep Learning training config.
+# Same backbone + augmentations as baseline; loss + head differ.
+
+experiment:
+  name: evidential_efficientnet_b0_aptos
+  tags: [evidential, edl, aptos]
+  seed: 42
+
+data:
+  dataset: aptos2019
+  root: ${oc.env:DATA_ROOT,./data}
+  image_size: 224
+  num_classes: 5
+  val_fraction: 0.15
+  test_fraction: 0.15
+  num_workers: 4
+
+model:
+  backbone: efficientnet_b0
+  pretrained: true
+  dropout: 0.3
+  num_classes: ${data.num_classes}
+
+training:
+  epochs: 30
+  batch_size: 32
+  optimizer: adamw
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  scheduler: cosine
+  warmup_epochs: 2
+  mixed_precision: true
+  gradient_clip: 1.0
+  early_stopping_patience: 7
+  # EDL-specific
+  annealing_step: 10           # epochs over which KL coefficient ramps 0 → 1
+
+logging:
+  wandb_project: ${oc.env:WANDB_PROJECT,retinal-selective-prediction}
+  wandb_entity: ${oc.env:WANDB_ENTITY,null}
+  log_every_n_steps: 20
+
+paths:
+  output_dir: experiments/runs/${experiment.name}
