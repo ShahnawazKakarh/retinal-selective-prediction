@@ -42,7 +42,8 @@ class TemperatureScaler(nn.Module):
     def calibrate_probs(self, logits: np.ndarray | torch.Tensor) -> np.ndarray:
         if isinstance(logits, np.ndarray):
             logits = torch.from_numpy(logits)
-        scaled = self.forward(logits.float())
+        logits = logits.float().to(self._raw_t.device)
+        scaled = self.forward(logits)
         return torch.softmax(scaled, dim=1).cpu().numpy()
 
     def fit(
