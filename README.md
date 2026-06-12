@@ -33,20 +33,22 @@ This repository benchmarks five families of **uncertainty quantification** metho
 
 ## 📈 Results
 
-> ⏳ Pending — first runs land after the baseline checkpoint completes on Kaggle. Tables below are the scaffolding for the paper's main results section.
+> ✅ **Internal test results live** (`b196c59`, 2026-06-12). See [`results/results.md`](results/results.md) for full breakdown and reproducibility notes. External validation on Messidor-2 / IDRiD coming next.
 
 ### Internal test set — APTOS 2019 (held-out 15%, stratified)
 
 | Method | Acc ↑ | QWK ↑ | ECE ↓ | NLL ↓ | AURC ↓ | Excess-AURC ↓ | Sel. Acc @ 80% coverage ↑ |
 |---|---|---|---|---|---|---|---|
-| Softmax (deterministic) | – | – | – | – | – | – | – |
-| Temperature Scaling | – | – | – | – | – | – | – |
-| MC Dropout (T=30) | – | – | – | – | – | – | – |
+| Softmax (deterministic) | 0.809 | 0.865 | 0.146 | 1.023 | 0.0793 | 0.0598 | 0.882 |
+| Temperature Scaling (T=2.25) | 0.809 | 0.865 | **0.055** | 0.576 | 0.0852 | 0.0657 | 0.884 |
+| MC Dropout (T=30, MI signal) | 0.809 | 0.865 | 0.146 | — | **0.0756** | **0.0561** | 0.882 |
+| Conformal (split, α=0.10) | 0.809 | 0.865 | — | — | 0.1112 | 0.0917 | 0.884 |
 | Deep Ensembles (M=5) | – | – | – | – | – | – | – |
 | Evidential DL | – | – | – | – | – | – | – |
-| Conformal (α=0.10) | – | – | – | – | – | – | – |
 
 QWK = quadratic-weighted Cohen's κ (APTOS official metric). ECE = Expected Calibration Error (15 bins). AURC = Area Under Risk–Coverage curve. Excess-AURC isolates the uncertainty signal from baseline accuracy.
+
+**Three different methods, three different wins.** Temperature Scaling cuts ECE by **62%** (0.146 → 0.055) with one scalar. MC Dropout with mutual information has the lowest AURC, meaning its uncertainty signal best identifies which predictions to abstain on. Conformal hits its 90% coverage target almost exactly (empirical 90.2%) with average set size 1.35.
 
 ### External validation — Messidor-2
 
@@ -249,10 +251,12 @@ A few design decisions called out so they don't surprise future-me or reviewers:
 - [x] Deterministic evaluation (ECE, reliability diagram, confusion matrix)
 - [x] Kaggle notebook for baseline training
 - [x] MC Dropout uncertainty + risk–coverage / AURC selective analysis
+- [x] **Baseline trained — val QWK 0.889, test QWK 0.865** ([W&B run](https://wandb.ai/qapulsebysk/retinal-selective-prediction))
+- [x] **Temperature Scaling — ECE 0.146 → 0.055**
+- [x] **MC Dropout (T=30) — best AURC across all methods**
+- [x] **Conformal Prediction (Split + APS) — 90.2% empirical coverage @ α=0.10**
 - [ ] Deep Ensembles (M=5 independent seeds)
-- [ ] Temperature Scaling (post-hoc calibration on val set)
 - [ ] Evidential Deep Learning (Dirichlet head + custom loss)
-- [ ] Conformal Prediction (split conformal + adaptive prediction sets)
 - [ ] External validation harness — Messidor-2 + IDRiD
 - [ ] **Novel piece:** class-conditional selective thresholds *(or)* distribution-shift-aware selective prediction
 - [ ] Paper draft — target IEEE J-BHI submission Oct/Nov 2026

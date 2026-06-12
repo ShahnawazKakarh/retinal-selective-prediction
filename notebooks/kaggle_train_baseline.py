@@ -19,7 +19,7 @@ GITHUB_USER = "ShahnawazKakarh"
 GITHUB_REPO = "retinal-selective-prediction"
 GITHUB_BRANCH = "master"  # change to feature branch when iterating
 
-APTOS_INPUT_DIR = "/kaggle/input/aptos2019-blindness-detection"
+APTOS_INPUT_DIR = "/kaggle/input/competitions/aptos2019-blindness-detection"
 WORKDIR = "/kaggle/working/retinal-selective-prediction"
 SPLITS_DIR = f"{WORKDIR}/data/splits/aptos2019"
 OUTPUT_DIR = "/kaggle/working/outputs"
@@ -116,3 +116,54 @@ if os.path.exists(best_ckpt):
     print(f"Saved checkpoint + config + SHA to {OUTPUT_DIR}")
 else:
     print(f"WARNING: no checkpoint at {best_ckpt}")
+
+# %% [markdown]
+# ## 7. Uncertainty methods on the trained checkpoint
+
+# %%
+RUN_DIR = f"{WORKDIR}/experiments/runs/baseline_efficientnet_b0_aptos"
+IMAGES_DIR = f"{APTOS_INPUT_DIR}/train_images"
+
+# Deterministic evaluation: kappa, ECE, NLL, Brier, reliability diagram
+run(f"cd {WORKDIR} && python scripts/evaluate.py "
+    f"--run-dir {RUN_DIR} "
+    f"--splits-dir {SPLITS_DIR} "
+    f"--images-dir {IMAGES_DIR}")
+
+# Temperature scaling: post-hoc calibration on val, applied to test
+run(f"cd {WORKDIR} && python scripts/run_temperature_scaling.py "
+    f"--run-dir {RUN_DIR} "
+    f"--splits-dir {SPLITS_DIR} "
+    f"--images-dir {IMAGES_DIR}")
+
+# MC Dropout: T=30 stochastic forward passes
+run(f"cd {WORKDIR} && python scripts/run_mc_dropout.py "
+    f"--run-dir {RUN_DIR} "
+    f"--splits-dir {SPLITS_DIR} "
+    f"--images-dir {IMAGES_DIR} "
+    f"--n-samples 30")
+
+# Conformal prediction: split + APS, alpha=0.10 (target 90% coverage)
+run(f"cd {WORKDIR} && python scripts/run_conformal.py "
+    f"--run-dir {RUN_DIR} "
+    f"--splits-dir {SPLITS_DIR} "
+    f"--images-dir {IMAGES_DIR} "
+    f"--alpha 0.10")
+
+# %% [markdown]
+# ## 8. Copy all uncertainty outputs to /kaggle/working/outputs/
+
+# %%
+for fname in [
+    "metrics.json", "predictions.csv",
+    "confusion_matrix.png", "reliability_diagram.png",
+    "temperature_scaling.json", "temperature_scaling_predictions.csv",
+    "temperature_scaling_selective.json",
+    "mc_dropout_predictions.csv", "mc_dropout_selective.json",
+    "conformal_predictions.csv", "conformal_summary.json",
+]:
+    src = f"{RUN_DIR}/{fname}"
+    if os.path.exists(src):
+        shutil.copy(src, f"{OUTPUT_DIR}/{fname}")
+        print(f"saved {fname}")
+print("All uncertainty outputs copied to /kaggle/working/outputs/")
