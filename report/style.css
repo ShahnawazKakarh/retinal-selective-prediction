@@ -1,0 +1,368 @@
+/* ============================================================
+   QA Pulse by SK — Technical Report Style (Dark Theme)
+   Built for WeasyPrint, A4. Matches QA Pulse PDF spec.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+/* --- Brand tokens (locked) --- */
+:root {
+    --bg:         #0d0f12;
+    --card:       #111418;
+    --border:     #1c2027;
+    --text:       #e8edf5;
+    --muted:      #8b95a3;
+    --blue:       #3b82f6;
+    --blue-dim:   #1d3a6e;
+    --green:      #22c55e;
+    --amber:      #f59e0b;
+    --red:        #ef4444;
+    --purple:     #a78bfa;
+}
+
+/* --- Page geometry --- */
+@page {
+    size: A4;
+    margin: 22mm 18mm 22mm 18mm;
+    background: var(--bg);
+
+    @top-left {
+        content: "Created by QA Pulse by SK";
+        font-family: "Inter", sans-serif;
+        font-size: 8pt;
+        color: var(--muted);
+    }
+    @top-right {
+        content: "skakarh.com";
+        font-family: "Inter", sans-serif;
+        font-size: 8pt;
+        color: var(--muted);
+    }
+    @bottom-left {
+        content: "Selective Prediction with Calibrated Uncertainty for DR Screening";
+        font-family: "Inter", sans-serif;
+        font-size: 8pt;
+        color: var(--muted);
+    }
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: "Inter", sans-serif;
+        font-size: 8pt;
+        color: var(--muted);
+    }
+}
+
+@page :first {
+    margin: 0;
+    @top-left { content: none; }
+    @top-right { content: none; }
+    @bottom-left { content: none; }
+    @bottom-right { content: none; }
+}
+
+/* --- Base typography --- */
+html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.55;
+    margin: 0;
+    padding: 0;
+}
+
+p { margin: 0 0 0.7em 0; }
+
+a { color: var(--blue); text-decoration: none; }
+
+code, pre, .mono { font-family: "JetBrains Mono", "Menlo", "Consolas", monospace; font-size: 9.5pt; }
+
+code {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    color: var(--purple);
+}
+
+pre {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 0.8em 1em;
+    border-radius: 6px;
+    color: var(--text);
+    overflow-x: auto;
+    margin: 0.6em 0 1em 0;
+}
+
+/* --- Cover page --- */
+.cover {
+    page: cover;
+    page-break-after: always;
+    background:
+        radial-gradient(circle at 25% 20%, rgba(59,130,246,0.10), transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(167,139,250,0.08), transparent 50%),
+        linear-gradient(180deg, #0d0f12 0%, #0a0c0f 100%);
+    color: var(--text);
+    width: 210mm;
+    height: 297mm;
+    box-sizing: border-box;
+    padding: 32mm 22mm 26mm 22mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+}
+
+.cover::before {
+    /* faint grid texture */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+}
+
+.cover-eyebrow {
+    font-size: 9pt;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--blue);
+    font-weight: 600;
+    margin-bottom: 6mm;
+}
+
+.cover-title {
+    font-family: "Inter", sans-serif;
+    font-size: 30pt;
+    font-weight: 700;
+    line-height: 1.18;
+    color: var(--text);
+    margin: 0 0 10mm 0;
+    max-width: 160mm;
+}
+
+.cover-subtitle {
+    font-size: 13pt;
+    color: var(--muted);
+    line-height: 1.45;
+    margin-bottom: 8mm;
+    max-width: 150mm;
+}
+
+.cover-meta {
+    border-top: 1px solid var(--border);
+    padding-top: 6mm;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6mm 10mm;
+    font-size: 9.5pt;
+}
+
+.cover-meta .label {
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 7.5pt;
+    margin-bottom: 1mm;
+}
+
+.cover-meta .value {
+    color: var(--text);
+    font-weight: 500;
+}
+
+.cover-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4mm;
+    margin: 8mm 0;
+}
+
+.stat {
+    background: rgba(17,20,24,0.7);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    padding: 4mm 4mm;
+    border-radius: 6px;
+}
+
+.stat .stat-value {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 16pt;
+    line-height: 1.1;
+}
+
+.stat .stat-label {
+    color: var(--muted);
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 1.5mm;
+}
+
+.cover-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 4mm;
+    color: var(--muted);
+    font-size: 8.5pt;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* --- Section / heading styles --- */
+h1, h2, h3, h4 {
+    color: var(--text);
+    font-family: "Inter", sans-serif;
+    line-height: 1.25;
+    font-weight: 700;
+}
+
+h1 {
+    font-size: 19pt;
+    margin: 14mm 0 4mm 0;
+    border-bottom: 2px solid var(--blue);
+    padding-bottom: 1.5mm;
+    page-break-after: avoid;
+}
+
+h2 {
+    font-size: 14pt;
+    margin: 8mm 0 3mm 0;
+    color: var(--blue);
+    page-break-after: avoid;
+}
+
+h3 {
+    font-size: 11.5pt;
+    margin: 6mm 0 2mm 0;
+    color: var(--text);
+    font-weight: 600;
+    page-break-after: avoid;
+}
+
+h4 {
+    font-size: 10.5pt;
+    margin: 4mm 0 1mm 0;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* --- Section number prefixes --- */
+.section-num {
+    color: var(--blue);
+    margin-right: 0.4em;
+    font-family: "JetBrains Mono", monospace;
+}
+
+/* --- Tables --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 3mm 0 6mm 0;
+    font-size: 9.5pt;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+thead {
+    background: var(--blue-dim);
+}
+
+th {
+    text-align: left;
+    color: var(--text);
+    font-weight: 600;
+    padding: 2.5mm 3mm;
+    border-bottom: 1px solid var(--border);
+    font-size: 9pt;
+}
+
+td {
+    padding: 2mm 3mm;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+}
+
+tr:last-child td { border-bottom: none; }
+
+td.num, th.num { font-family: "JetBrains Mono", monospace; text-align: right; }
+
+.best { color: var(--green); font-weight: 600; }
+.warn { color: var(--amber); }
+.bad  { color: var(--red); }
+
+/* --- Callout / note boxes --- */
+.callout {
+    border-left: 3px solid var(--blue);
+    background: rgba(59,130,246,0.06);
+    padding: 3mm 5mm;
+    margin: 3mm 0 4mm 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 10pt;
+    color: var(--text);
+}
+
+.callout.amber { border-left-color: var(--amber); background: rgba(245,158,11,0.06); }
+.callout.green { border-left-color: var(--green); background: rgba(34,197,94,0.06); }
+.callout.red   { border-left-color: var(--red); background: rgba(239,68,68,0.06); }
+.callout.muted { border-left-color: var(--border); background: rgba(255,255,255,0.02); }
+
+.callout strong { color: var(--blue); }
+
+/* --- Abstract block --- */
+.abstract {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    padding: 5mm 6mm;
+    margin: 4mm 0 6mm 0;
+    border-radius: 4px;
+}
+
+.abstract h2 {
+    margin: 0 0 2mm 0;
+    color: var(--blue);
+    font-size: 11pt;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.abstract p { font-size: 10pt; }
+
+/* --- Citation list --- */
+ol.refs {
+    padding-left: 5mm;
+    font-size: 9.5pt;
+    color: var(--text);
+}
+
+ol.refs li {
+    margin-bottom: 2mm;
+    padding-left: 1mm;
+    line-height: 1.45;
+}
+
+ol.refs li a { word-break: break-all; }
+
+/* --- Misc --- */
+.muted { color: var(--muted); }
+.small { font-size: 8.5pt; }
+.center { text-align: center; }
+.mt-large { margin-top: 8mm; }
+.mb-large { margin-bottom: 8mm; }
+.keep-together { page-break-inside: avoid; }
+hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 6mm 0;
+}

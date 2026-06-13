@@ -232,6 +232,8 @@ retinal-selective-prediction/
 
 ## 🔬 Research notes
 
+Full writeup of scientific framing, prior work, novelty positioning, and the v1.0.0 → v1.1.0 → v2.0.0 plan lives in [`docs/research_notes.md`](docs/research_notes.md).
+
 A few design decisions called out so they don't surprise future-me or reviewers:
 
 - **Single backbone for all uncertainty methods.** Mixing backbones across methods is the silent killer in this literature — any AURC difference becomes "is it the uncertainty method or the model?" Fixed backbone makes the comparison genuinely apples-to-apples.
@@ -261,6 +263,24 @@ A few design decisions called out so they don't surprise future-me or reviewers:
 - [ ] **Novel piece:** class-conditional selective thresholds *(or)* distribution-shift-aware selective prediction
 - [ ] Paper draft — target IEEE J-BHI submission Oct/Nov 2026
 - [ ] Blog writeup on [skakarh.com](https://www.skakarh.com/blog/)
+
+---
+
+## 📦 Versioned releases & how to cite
+
+This project is published as **versioned Zenodo releases**, each with its own DOI. The Concept DOI on Zenodo resolves to the latest version; the version-specific DOI pins to an exact artifact. The same project also progresses toward an IEEE J-BHI submission for v2.0.0.
+
+| Version | Scope | Status |
+|---|---|---|
+| **v1.0.0** | Single-seed benchmark on APTOS 2019 (4 uncertainty methods) | 🟢 Released → Zenodo (this release) |
+| v1.1.0 | + Class-conditional selective thresholds (novel) + IDRiD external validation | 🟡 Planned |
+| v2.0.0 | + Deep Ensembles + Evidential DL + Messidor-2 + equity audit | 🔵 Target: IEEE J-BHI |
+
+**Step-by-step Zenodo release & ORCID flow:** [`docs/zenodo_release.md`](docs/zenodo_release.md)
+**Built technical report PDF source:** [`report/`](report/) (run `python report/build.py` to rebuild)
+**Machine-readable citation:** [`CITATION.cff`](CITATION.cff)
+
+If you use this benchmark in your work, please cite it via the `CITATION.cff` metadata (DOI added once Zenodo mints v1.0.0).
 
 ---
 

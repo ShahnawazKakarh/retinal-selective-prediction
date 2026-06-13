@@ -1,35 +1,54 @@
 cff-version: 1.2.0
-title: "Retinal Selective Prediction: Calibrated Uncertainty and Selective Classification for Diabetic Retinopathy Screening"
-message: "If you use this software in your research, please cite it as below."
-type: software
+message: "If you use this benchmark, please cite it using the metadata in this file."
+title: "Selective Prediction with Calibrated Uncertainty for Diabetic Retinopathy Screening: A Single-Backbone Benchmark on APTOS 2019"
+version: "1.0.0"
+date-released: "2026-06-13"
 authors:
-  - family-names: Khan
-    given-names: Shahnawaz
-    alias: ShahnawazKakarh
-    website: "https://www.skakarh.com"
+  - family-names: "Khan"
+    given-names: "Shahnawaz"
+    orcid: "https://orcid.org/0009-0007-4055-6563"
+    affiliation: "Independent Researcher"
+    email: "shahnawaz.jrw@gmail.com"
 repository-code: "https://github.com/ShahnawazKakarh/retinal-selective-prediction"
 url: "https://www.skakarh.com"
 license: MIT
-keywords:
-  - medical-imaging
-  - diabetic-retinopathy
-  - selective-prediction
-  - uncertainty-quantification
-  - calibration
-  - deep-learning
-  - pytorch
 abstract: >-
-  Benchmark and selective-prediction analysis of deterministic, Bayesian,
-  and conformal uncertainty methods applied to retinal disease screening
-  (APTOS 2019, with external validation on Messidor-2 and IDRiD). The
-  central question is when a deep model should abstain and route a case
-  to a clinician, and how much that improves the safety / coverage
-  trade-off relative to a deterministic baseline.
+  We provide an open-source, single-backbone, single-seed,
+  fully reproducible benchmark of four post-hoc uncertainty
+  quantification methods on the APTOS 2019 diabetic
+  retinopathy grading task. The release evaluates plain
+  softmax confidence, Temperature Scaling, MC Dropout (T=30)
+  with four uncertainty signals including BALD mutual
+  information, and Split Conformal Prediction (with APS
+  variant). All methods reuse a single trained EfficientNet-B0
+  checkpoint and a single locked random seed. Results show
+  that Temperature Scaling reduces Expected Calibration Error
+  from 0.146 to 0.055, MC Dropout with mutual information
+  yields the lowest AURC (0.0756), and Split Conformal hits
+  empirical coverage 0.902 against a 0.90 target. The work
+  is positioned as a reproducible benchmark rather than a
+  novel methodological contribution; novel pieces and
+  external validation are scoped for v1.1.0 and v2.0.0.
+keywords:
+  - "diabetic retinopathy"
+  - "selective prediction"
+  - "uncertainty quantification"
+  - "Bayesian deep learning"
+  - "temperature scaling"
+  - "MC dropout"
+  - "conformal prediction"
+  - "APTOS 2019"
+  - "calibration"
+  - "ECE"
+  - "AURC"
 preferred-citation:
-  type: software
-  title: "Retinal Selective Prediction"
+  type: report
+  title: "Selective Prediction with Calibrated Uncertainty for Diabetic Retinopathy Screening: A Single-Backbone Benchmark on APTOS 2019"
   authors:
-    - family-names: Khan
-      given-names: Shahnawaz
+    - family-names: "Khan"
+      given-names: "Shahnawaz"
+      orcid: "https://orcid.org/0009-0007-4055-6563"
   year: 2026
+  version: "1.0.0"
+  doi: "10.5281/zenodo.PENDING"
   url: "https://github.com/ShahnawazKakarh/retinal-selective-prediction"

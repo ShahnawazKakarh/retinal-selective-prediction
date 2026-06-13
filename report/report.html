@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Selective Prediction with Calibrated Uncertainty for Diabetic Retinopathy Screening</title>
+</head>
+<body>
+
+<!-- =============================================================
+     COVER (page 1 only)
+     ============================================================= -->
+<section class="cover">
+    <div>
+        <div class="cover-eyebrow">Technical Report &middot; Version 1.0.0</div>
+        <h1 class="cover-title">Selective Prediction with Calibrated Uncertainty for Diabetic Retinopathy Screening</h1>
+        <p class="cover-subtitle">A single-backbone, single-seed, fully reproducible benchmark of four post-hoc uncertainty methods on APTOS 2019.</p>
+    </div>
+
+    <div class="cover-stats">
+        <div class="stat"><div class="stat-value">0.865</div><div class="stat-label">Test QWK</div></div>
+        <div class="stat"><div class="stat-value">0.055</div><div class="stat-label">ECE after TS</div></div>
+        <div class="stat"><div class="stat-value">0.0756</div><div class="stat-label">Best AURC</div></div>
+        <div class="stat"><div class="stat-value">90.2%</div><div class="stat-label">Conformal Coverage</div></div>
+    </div>
+
+    <div>
+        <div class="cover-meta">
+            <div>
+                <div class="label">Author</div>
+                <div class="value">Shahnawaz Khan</div>
+                <div class="small muted">ORCID: 0009-0007-4055-6563</div>
+            </div>
+            <div>
+                <div class="label">Affiliation</div>
+                <div class="value">Independent Researcher</div>
+                <div class="small muted">QA Pulse by SK &middot; skakarh.com</div>
+            </div>
+            <div>
+                <div class="label">Dataset</div>
+                <div class="value">APTOS 2019 Blindness Detection</div>
+                <div class="small muted">3,662 images, 5-class ICDR grading</div>
+            </div>
+            <div>
+                <div class="label">Reproducibility</div>
+                <div class="value mono">git SHA b196c59</div>
+                <div class="small muted">W&amp;B run p3dbnx3q &middot; Kaggle T4</div>
+            </div>
+        </div>
+
+        <div class="cover-footer">
+            <span>Released June 2026</span>
+            <span>github.com/ShahnawazKakarh/retinal-selective-prediction</span>
+        </div>
+    </div>
+</section>
+
+<!-- =============================================================
+     CONTENT — page 2 onward
+     ============================================================= -->
+
+<div class="abstract">
+    <h2>Abstract</h2>
+    <p><strong>Background.</strong> Diabetic retinopathy (DR) screening is increasingly automated, but deployed deep learning systems for DR severity grading typically commit to a label for every image, with no principled mechanism for abstention on uncertain cases. Selective prediction — abstaining when uncertainty is high and deferring to a human reader — is the natural fit, yet the literature on DR uncertainty quantification is fragmented across binary referable / non-referable formulations, varied backbones, and inconsistent evaluation harnesses.</p>
+    <p><strong>Method.</strong> We train a single EfficientNet-B0 baseline on APTOS 2019 with a locked random seed and evaluate four post-hoc uncertainty methods on the identical held-out test set: (i) plain softmax confidence, (ii) Temperature Scaling, (iii) MC Dropout with T=30 stochastic forward passes (yielding four uncertainty signals: negative max-confidence, predictive entropy, expected entropy, mutual information), and (iv) Split Conformal Prediction with two variants (set-size and APS), all at &alpha;=0.10. Every method is evaluated through the same risk-coverage harness and the same per-bin calibration analysis.</p>
+    <p><strong>Results.</strong> The deterministic baseline achieves test accuracy 0.809 and quadratic-weighted &kappa; 0.865. <strong>Temperature Scaling</strong> reduces Expected Calibration Error from 0.146 to 0.055 (62% relative reduction) with a single fitted scalar T=2.25, at the cost of a small AURC increase. <strong>MC Dropout's mutual-information signal (BALD)</strong> achieves the lowest AURC of any method, 0.0756, beating both deterministic softmax (0.0793) and Temperature Scaling (0.0852). <strong>Split Conformal</strong> attains empirical coverage 0.902 against a 0.90 target with average prediction-set size 1.35 (76.0% singletons). Three different methods, three different wins: calibration, selective-prediction quality, and coverage guarantee.</p>
+    <p><strong>Contribution.</strong> This report is positioned as an open, reproducible benchmark rather than a novel methodological contribution. All training is from a single Kaggle notebook, all per-sample outputs are saved as CSVs, all weights & biases are exposed via a public W&amp;B run, and the exact git commit producing each number is recorded inside the result files. The release accompanies the source code at <code>github.com/ShahnawazKakarh/retinal-selective-prediction</code>.</p>
+</div>
+
+<h1 id="introduction"><span class="section-num">1.</span> Introduction</h1>
+
+<p>Diabetic retinopathy is the leading cause of preventable adult blindness worldwide. Modern deep learning systems for DR severity grading routinely achieve quadratic-weighted &kappa; in the 0.85&ndash;0.94 range on the APTOS 2019 benchmark <a href="#ref-aptos">[1]</a>, yet the gap between competition leaderboard performance and clinical deployability remains wide. A clinical workflow does not need a single prediction; it needs a prediction <em>plus</em> a defensible reason to either trust that prediction or escalate to a human reviewer. This is the selective-prediction problem.</p>
+
+<p>The literature has matured rapidly on the technical side. Temperature Scaling <a href="#ref-guo">[2]</a> demonstrated that post-hoc calibration with a single scalar yields large reductions in Expected Calibration Error. MC Dropout <a href="#ref-gal">[3]</a> connected dropout-at-inference to approximate Bayesian inference. Conformal Prediction <a href="#ref-romano">[4]</a><a href="#ref-angelopoulos">[5]</a> gave distribution-free finite-sample coverage guarantees. Risk-coverage analysis <a href="#ref-elyaniv">[6]</a><a href="#ref-geifman">[7]</a> formalized how to compare uncertainty signals against each other independently of the underlying model's accuracy. Each individual technique is well-understood.</p>
+
+<p>What remains awkward, in our view, is the <em>integration</em>. Published benchmarks on DR uncertainty typically use different backbones, different splits, different signals, and different evaluation scripts &mdash; making head-to-head comparison difficult. Filos et al. <a href="#ref-filos">[8]</a> and Band et al. <a href="#ref-band">[9]</a> are notable exceptions but focus on the EyePACS / Kaggle DR dataset rather than APTOS 2019, and target the binary referable task rather than full 5-class ordinal grading. The smaller, newer APTOS dataset has a distinct label distribution and is the de-facto benchmark for the 5-class formulation.</p>
+
+<p>This report provides a clean, reproducible, single-seed, single-backbone evaluation of four post-hoc uncertainty methods on APTOS 2019. We deliberately do not claim a new method; we provide a controlled comparison that other researchers can copy, modify, and extend.</p>
+
+<div class="callout">
+    <strong>Scope clarification.</strong> This is version 1.0.0 of an ongoing project. The novel methodological piece &mdash; class-conditional selective thresholds for ordinal DR grading &mdash; together with external validation on IDRiD and Messidor-2, Deep Ensembles, and Evidential Deep Learning, are explicitly scoped for v1.1.0 and v2.0.0. They are not part of this release. We make this distinction up front to avoid the appearance of over-claiming.
+</div>
+
+<h1 id="related"><span class="section-num">2.</span> Related Work</h1>
+
+<h3>2.1 Uncertainty quantification for medical imaging</h3>
+<p>Bayesian deep learning approaches to medical imaging classification are surveyed in <a href="#ref-abdar">[10]</a>. For diabetic retinopathy specifically, Leibig et al. <a href="#ref-leibig">[11]</a> were among the first to apply MC Dropout to a large-scale DR screening dataset, demonstrating that referring high-uncertainty samples to a human reader improves the kept-class accuracy. Ayhan et al. <a href="#ref-ayhan">[12]</a> extended this with test-time augmentation. Linmans et al. <a href="#ref-linmans">[13]</a> evaluated Evidential Deep Learning on retinal imaging.</p>
+
+<h3>2.2 Selective prediction</h3>
+<p>El-Yaniv and Wiener <a href="#ref-elyaniv">[6]</a> formalized selective classification and the risk-coverage curve. Geifman and El-Yaniv <a href="#ref-geifman">[7]</a> introduced SelectiveNet and the AURC / Excess-AURC metrics that we use throughout this report. Recent work has extended selective prediction to large language models <a href="#ref-kamath">[14]</a> and to distribution shift settings <a href="#ref-tran">[15]</a>.</p>
+
+<h3>2.3 Conformal prediction</h3>
+<p>Conformal Prediction <a href="#ref-vovk">[16]</a> provides distribution-free finite-sample coverage guarantees. The Split Conformal variant <a href="#ref-romano">[4]</a> is the practical choice for deep learning; Adaptive Prediction Sets (APS) <a href="#ref-romano2">[17]</a> improve set-size efficiency on imbalanced problems. Angelopoulos and Bates <a href="#ref-angelopoulos">[5]</a> provide a tutorial.</p>
+
+<h3>2.4 Calibration</h3>
+<p>Modern neural networks are systematically over-confident <a href="#ref-guo">[2]</a>. Temperature Scaling fits a single scalar T to the validation logits via maximum likelihood; this preserves the argmax and therefore the accuracy, while dramatically improving calibration as measured by Expected Calibration Error <a href="#ref-naeini">[18]</a>. Recent work questions the adequacy of ECE itself <a href="#ref-nixon">[19]</a> and proposes alternatives; we report ECE in this release for comparability with prior work, while keeping the per-sample outputs available so future analyses can recompute other calibration metrics.</p>
+
+<h1 id="methods"><span class="section-num">3.</span> Methods</h1>
+
+<h3>3.1 Backbone and training</h3>
+<p>We train EfficientNet-B0 <a href="#ref-tan">[20]</a> initialized from ImageNet-pretrained weights. The classification head is a single linear layer over 5 outputs with a dropout layer (p=0.3) immediately before it &mdash; the same dropout layer is reused at inference time for MC Dropout. The image preprocessing pipeline (Albumentations) follows standard practice for DR: resize-with-aspect-ratio to 224 then pad to 224&times;224, ImageNet normalization, random horizontal and vertical flips, mild color jitter, and a small probability of Gaussian noise.</p>
+
+<p>Training uses AdamW (learning rate 3e-4, weight decay 1e-2) with cosine annealing and 1 epoch of linear warmup. Loss is standard cross-entropy. We train for up to 30 epochs with mixed-precision (AMP) and early stopping (patience 7) on validation quadratic-weighted &kappa;. The full training configuration is committed at <code>configs/baseline.yaml</code> and saved alongside each checkpoint.</p>
+
+<h3>3.2 Splits</h3>
+<p>The 3,662 labeled APTOS training images are split into train / val / test = 70 / 15 / 15 with a stratified shuffle. The split is fully deterministic from <code>GLOBAL_SEED=42</code>. The same splits are used for all uncertainty methods.</p>
+
+<h3>3.3 Uncertainty methods</h3>
+
+<h4>3.3.1 Plain softmax (deterministic baseline)</h4>
+<p>For each test sample, we use the negative of the max-softmax probability as the uncertainty signal. Predictive entropy is also computed for comparison. No calibration, no abstention by default; an abstention rule is added post-hoc via the risk-coverage harness.</p>
+
+<h4>3.3.2 Temperature Scaling</h4>
+<p>A single scalar T is fitted on the validation logits by minimizing NLL with L-BFGS. The temperature is parameterized via a softplus to keep T &gt; 0 throughout optimization. At inference we divide test logits by T before softmax. ECE is recomputed on the calibrated test probabilities.</p>
+
+<h4>3.3.3 MC Dropout (T=30)</h4>
+<p>We perform 30 stochastic forward passes with dropout active. From the T softmax distributions we compute:</p>
+<ul>
+    <li><strong>Predictive entropy</strong>: H[E_t[p_t]] &mdash; total uncertainty.</li>
+    <li><strong>Expected entropy</strong>: E_t[H[p_t]] &mdash; aleatoric component.</li>
+    <li><strong>Mutual information (BALD)</strong>: H[E_t[p_t]] &minus; E_t[H[p_t]] &mdash; epistemic component.</li>
+    <li><strong>Negative max confidence</strong>: &minus;max E_t[p_t] &mdash; for direct comparison with the deterministic baseline.</li>
+</ul>
+<p>All four signals are saved per sample for downstream analysis.</p>
+
+<h4>3.3.4 Conformal Prediction</h4>
+<p>We implement both Split Conformal (non-conformity score = 1 &minus; softmax probability of the true class on val) and Adaptive Prediction Sets (APS). The non-conformity threshold q&#770; is calibrated to satisfy a target coverage of 1 &minus; &alpha; = 0.90 on the validation set, and applied unchanged to the test set. We report empirical coverage, average set size, median set size, and singleton fraction.</p>
+
+<h3>3.4 Evaluation</h3>
+<p>For each method we compute, on the held-out test set: accuracy, quadratic-weighted Cohen's &kappa;, NLL, Brier score, Expected Calibration Error (15 bins, equal-width), per-class precision / recall / F1, the risk-coverage curve, AURC (area under the risk-coverage curve), Excess-AURC (AURC minus the optimal-ranking baseline), and selective accuracy at coverage levels 70%, 80%, 90%, 95%. For Conformal we additionally report empirical coverage and prediction-set diagnostics.</p>
+
+<p>Excess-AURC is the key metric for isolating the quality of the uncertainty signal from the underlying classifier's accuracy. Two methods can have similar AURC if one has high accuracy and a weak uncertainty signal while another has lower accuracy and a strong uncertainty signal; Excess-AURC separates these.</p>
+
+<h1 id="setup"><span class="section-num">4.</span> Experimental setup</h1>
+
+<p>All training and evaluation runs are reproducible from the public repository at <code>github.com/ShahnawazKakarh/retinal-selective-prediction</code>. The notebook <code>notebooks/kaggle_train_baseline.py</code> contains the complete end-to-end pipeline. The git SHA at the time of producing the numbers in this report is <code>b196c59</code>, which is also written to <code>outputs/git_sha.txt</code> alongside every saved checkpoint.</p>
+
+<table class="keep-together">
+    <thead>
+        <tr><th>Configuration item</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Backbone</td><td>EfficientNet-B0 (timm, ImageNet-pretrained)</td></tr>
+        <tr><td>Image size</td><td>224 &times; 224</td></tr>
+        <tr><td>Optimizer</td><td>AdamW, lr=3e-4, weight_decay=1e-2</td></tr>
+        <tr><td>Scheduler</td><td>Cosine annealing + 1-epoch linear warmup</td></tr>
+        <tr><td>Mixed precision</td><td>Yes (AMP)</td></tr>
+        <tr><td>Batch size</td><td>32</td></tr>
+        <tr><td>Max epochs</td><td>30</td></tr>
+        <tr><td>Early stopping</td><td>patience 7 on validation QWK</td></tr>
+        <tr><td>Random seed</td><td>42 (split, init, dropout sampling)</td></tr>
+        <tr><td>Train / val / test</td><td>2,562 / 550 / 550 (stratified)</td></tr>
+        <tr><td>MC Dropout T</td><td>30</td></tr>
+        <tr><td>Conformal &alpha;</td><td>0.10 (target coverage 0.90)</td></tr>
+        <tr><td>Hardware</td><td>Kaggle T4 GPU, ~50 min training, ~15 min uncertainty methods</td></tr>
+    </tbody>
+</table>
+
+<h1 id="results"><span class="section-num">5.</span> Results</h1>
+
+<h3>5.1 Baseline classification performance</h3>
+<p>Training converged with best validation &kappa; = <strong>0.8887</strong> at epoch 17, early-stopped at epoch 24 of a maximum 30. On the held-out test set:</p>
+
+<table class="keep-together">
+    <thead><tr><th>Metric</th><th class="num">Value</th></tr></thead>
+    <tbody>
+        <tr><td>Test accuracy</td><td class="num">0.8091</td></tr>
+        <tr><td>Test quadratic-weighted &kappa;</td><td class="num">0.8651</td></tr>
+        <tr><td>ECE (15 bins)</td><td class="num bad">0.1460</td></tr>
+        <tr><td>NLL</td><td class="num">1.0228</td></tr>
+        <tr><td>Brier</td><td class="num">0.3250</td></tr>
+    </tbody>
+</table>
+
+<p>Per-class behavior is highly non-uniform:</p>
+
+<table class="keep-together">
+    <thead><tr><th>Class</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Support</th></tr></thead>
+    <tbody>
+        <tr><td>No DR (0)</td><td class="num">0.967</td><td class="num">0.970</td><td class="num best">0.969</td><td class="num">271</td></tr>
+        <tr><td>Mild (1)</td><td class="num">0.521</td><td class="num">0.446</td><td class="num bad">0.481</td><td class="num">56</td></tr>
+        <tr><td>Moderate (2)</td><td class="num">0.729</td><td class="num">0.807</td><td class="num">0.766</td><td class="num">150</td></tr>
+        <tr><td>Severe (3)</td><td class="num">0.550</td><td class="num">0.379</td><td class="num bad">0.449</td><td class="num">29</td></tr>
+        <tr><td>Proliferative DR (4)</td><td class="num">0.568</td><td class="num">0.568</td><td class="num">0.568</td><td class="num">44</td></tr>
+        <tr><td><strong>Macro avg</strong></td><td class="num"><strong>0.667</strong></td><td class="num"><strong>0.634</strong></td><td class="num"><strong>0.646</strong></td><td class="num">550</td></tr>
+    </tbody>
+</table>
+
+<div class="callout">
+    <strong>Already a publishable observation.</strong> Per-class F1 drops sharply on the minority severe-DR classes (Mild 0.48, Severe 0.45, Proliferative 0.57) while No DR sits at 0.97. The deterministic baseline is therefore <em>most over-confident exactly where misclassification is clinically costly</em>. The ECE of 0.146 is driven disproportionately by these classes. This is exactly the gap selective prediction is designed to close, and it foreshadows the class-conditional selective threshold method we plan to add in v1.1.0.
+</div>
+
+<h3>5.2 Headline comparison of uncertainty methods</h3>
+
+<p>All methods reuse the same baseline checkpoint. AURC and Excess-AURC are reported on the best uncertainty signal per method.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th class="num">Acc &uarr;</th>
+            <th class="num">ECE &darr;</th>
+            <th class="num">AURC &darr;</th>
+            <th class="num">Excess-AURC &darr;</th>
+            <th class="num">SelAcc @ 80%</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>Softmax (deterministic)</td><td class="num">0.809</td><td class="num bad">0.146</td><td class="num">0.0793</td><td class="num">0.0598</td><td class="num">0.882</td></tr>
+        <tr><td>Temperature Scaling (T=2.25)</td><td class="num">0.809</td><td class="num best">0.055</td><td class="num">0.0852</td><td class="num">0.0657</td><td class="num">0.884</td></tr>
+        <tr><td>MC Dropout (T=30, MI / BALD)</td><td class="num">0.809</td><td class="num bad">0.146</td><td class="num best">0.0756</td><td class="num best">0.0561</td><td class="num">0.882</td></tr>
+        <tr><td>Conformal (split, &alpha;=0.10)</td><td class="num">0.809</td><td class="num muted">&mdash;</td><td class="num">0.1112</td><td class="num">0.0917</td><td class="num">0.884</td></tr>
+    </tbody>
+</table>
+
+<p>The headline finding is that <strong>no single method dominates on all metrics</strong>. Temperature Scaling wins on calibration. MC Dropout wins on AURC. Conformal is the only method providing a finite-sample coverage guarantee. The choice between them depends on the downstream use case.</p>
+
+<h3>5.3 Temperature Scaling</h3>
+
+<p>The optimal temperature on validation logits is T = 2.247. Since T &gt; 1, the model is over-confident (softer the softmax). Calibration metrics:</p>
+
+<table class="keep-together">
+    <thead><tr><th>Metric</th><th class="num">Pre-calibration</th><th class="num">Post-calibration</th><th class="num">Change</th></tr></thead>
+    <tbody>
+        <tr><td>ECE (15 bins)</td><td class="num">0.1460</td><td class="num best">0.0549</td><td class="num best">&minus;62.4%</td></tr>
+        <tr><td>NLL</td><td class="num">0.9374</td><td class="num best">0.5758</td><td class="num best">&minus;38.6%</td></tr>
+        <tr><td>Test accuracy</td><td class="num">0.8091</td><td class="num">0.8091</td><td class="num muted">unchanged (Temperature Scaling preserves argmax)</td></tr>
+    </tbody>
+</table>
+
+<p>AURC on negative max confidence is slightly worse after TS (0.0852 vs 0.0793 deterministic) because softening the softmax compresses the dynamic range of the uncertainty signal at the top end. This is a known trade-off: calibration and ranking are not the same objective.</p>
+
+<h3>5.4 MC Dropout (T=30)</h3>
+
+<p>Four uncertainty signals from 30 stochastic forward passes:</p>
+
+<table class="keep-together">
+    <thead><tr><th>Signal</th><th class="num">AURC</th><th class="num">Excess-AURC</th><th class="num">SelAcc @70%</th><th class="num">@80%</th><th class="num">@90%</th><th class="num">@95%</th></tr></thead>
+    <tbody>
+        <tr><td>Negative max confidence</td><td class="num">0.0793</td><td class="num">0.0598</td><td class="num">0.919</td><td class="num">0.882</td><td class="num">0.848</td><td class="num">0.828</td></tr>
+        <tr><td>Predictive entropy</td><td class="num">0.0798</td><td class="num">0.0603</td><td class="num">0.919</td><td class="num">0.882</td><td class="num">0.848</td><td class="num">0.826</td></tr>
+        <tr><td>Expected entropy</td><td class="num">0.0799</td><td class="num">0.0604</td><td class="num">0.919</td><td class="num">0.882</td><td class="num">0.851</td><td class="num">0.828</td></tr>
+        <tr><td><strong>Mutual information (BALD)</strong></td><td class="num best">0.0756</td><td class="num best">0.0561</td><td class="num best">0.927</td><td class="num">0.882</td><td class="num">0.848</td><td class="num">0.824</td></tr>
+    </tbody>
+</table>
+
+<p>Mutual information &mdash; the epistemic-only component &mdash; consistently outperforms the total-uncertainty signals. The 4.7% relative improvement in AURC over deterministic softmax (0.0756 vs 0.0793) is meaningful given how cheap MC Dropout is to deploy: it requires no architectural changes and uses the same checkpoint.</p>
+
+<h3>5.5 Conformal Prediction</h3>
+
+<table class="keep-together">
+    <thead><tr><th>Variant</th><th class="num">Target coverage</th><th class="num">Empirical coverage</th><th class="num">Avg set size</th><th class="num">Median</th><th class="num">% singletons</th></tr></thead>
+    <tbody>
+        <tr><td>Split Conformal (&alpha;=0.10)</td><td class="num">0.900</td><td class="num best">0.902</td><td class="num">1.35</td><td class="num">1</td><td class="num">76.0%</td></tr>
+        <tr><td>APS (&alpha;=0.10)</td><td class="num">0.900</td><td class="num warn">0.987</td><td class="num">3.71</td><td class="num">4</td><td class="num">10.7%</td></tr>
+    </tbody>
+</table>
+
+<p>Split Conformal hits its target coverage almost exactly (0.902 vs 0.900) with average set size 1.35 &mdash; meaning three quarters of test images receive a singleton prediction set, while the remaining quarter receives a set of two or more classes, signaling clinical ambiguity. APS over-covers significantly (0.987 vs 0.900), at the cost of much larger sets (avg 3.71). The over-coverage of APS on imbalanced ordinal problems is consistent with prior observations <a href="#ref-romano2">[17]</a>.</p>
+
+<h3>5.6 Compute cost</h3>
+
+<table class="keep-together">
+    <thead><tr><th>Method</th><th class="num">Train cost</th><th class="num">Inference cost</th><th class="num">Wall time (T4)</th></tr></thead>
+    <tbody>
+        <tr><td>Baseline + Softmax</td><td class="num">1&times;</td><td class="num">1&times;</td><td>~50 min train + 1 min eval</td></tr>
+        <tr><td>Temperature Scaling</td><td class="num">0&times;</td><td class="num">~1&times;</td><td>2 min</td></tr>
+        <tr><td>MC Dropout (T=30)</td><td class="num">0&times;</td><td class="num">30&times;</td><td>12 min</td></tr>
+        <tr><td>Conformal (Split + APS)</td><td class="num">0&times;</td><td class="num">~2&times;</td><td>2 min</td></tr>
+    </tbody>
+</table>
+
+<p>Temperature Scaling and Conformal are essentially free at inference. MC Dropout's 30&times; inference cost is significant in a deployment setting; the AURC gain (0.0793 &rarr; 0.0756) needs to be weighed against this.</p>
+
+<h1 id="discussion"><span class="section-num">6.</span> Discussion</h1>
+
+<p><strong>Three different methods, three different wins.</strong> The cleanest takeaway from this benchmark is that the choice of uncertainty method should follow the downstream objective:</p>
+
+<ul>
+    <li><em>If the deployment needs calibrated probabilities</em> (e.g., for cost-sensitive triage), <strong>Temperature Scaling</strong> is the obvious choice. It is essentially free, preserves the argmax, and roughly halves ECE.</li>
+    <li><em>If the deployment needs the best abstention policy</em> (i.e., the highest accuracy on retained predictions for any given coverage), <strong>MC Dropout's mutual-information signal</strong> wins. The cost is 30&times; inference compute.</li>
+    <li><em>If the deployment needs a coverage guarantee</em> (e.g., a regulator requires "at least 90% of cases must have the correct label in the returned set"), <strong>Split Conformal</strong> is the only method here that provides one. Its average set size of 1.35 is operationally reasonable.</li>
+</ul>
+
+<p>Notably, <strong>raw selective accuracy at 80% coverage is essentially identical across all methods</strong> (0.882 &ndash; 0.884). The differences live in AURC and ECE, not in selective accuracy at any single coverage level. This is consistent with prior observations that risk-coverage curves are dominated by the underlying classifier and that uncertainty methods can shift the curve only modestly.</p>
+
+<p><strong>The most clinically actionable finding</strong> is the per-class behavior of the baseline: F1 of 0.48 on Mild and 0.45 on Severe, against 0.97 on No DR. A global confidence threshold for abstention will disproportionately abstain on these minority classes &mdash; the wrong direction. The class-conditional selective threshold method we plan to add in v1.1.0 directly addresses this by setting per-class abstention rules calibrated to equalize per-class retained recall.</p>
+
+<h1 id="limitations"><span class="section-num">7.</span> Limitations and Future Work</h1>
+
+<div class="callout amber">
+    <strong>Limitations of this release.</strong> We make these explicit to set expectations honestly.
+</div>
+
+<ol>
+    <li><strong>Single seed.</strong> All numbers reported are from a single training run with seed 42. We do not estimate run-to-run variance. The next version will report mean &plusmn; standard deviation across at least 3 seeds.</li>
+    <li><strong>Single dataset, internal split only.</strong> All evaluation is on a held-out portion of APTOS 2019 itself. We do not test generalization to other DR datasets. External validation on IDRiD and Messidor-2 is scoped for v1.1.0.</li>
+    <li><strong>Single backbone.</strong> EfficientNet-B0 was chosen for its strong accuracy / compute trade-off, but we do not compare to ResNet-50, ConvNeXt, or ViT backbones. Whether our findings generalize across backbones is open.</li>
+    <li><strong>Methods omitted.</strong> Deep Ensembles and Evidential Deep Learning are well-known strong baselines that are not included in this version, primarily because Deep Ensembles requires M independent training runs (compute cost) and Evidential DL requires a separate training pipeline with a different loss.</li>
+    <li><strong>ECE has known weaknesses.</strong> ECE depends on binning and can hide important calibration failures. We save per-sample softmax outputs so future analyses can recompute Brier decomposition, adaptive-bin ECE, and reliability via density-estimation methods.</li>
+    <li><strong>5-class ordinal structure is not exploited.</strong> We treat DR grading as flat 5-class classification. Quadratic-weighted &kappa; partially compensates by penalizing off-by-one errors more lightly than off-by-three errors, but our uncertainty methods themselves are oblivious to ordinality. An ordinality-aware uncertainty method is a natural extension.</li>
+</ol>
+
+<h3>7.1 Concrete plan for v1.1.0</h3>
+<ul>
+    <li>Add IDRiD external validation. The IDRiD grading scheme matches APTOS's 5-class ICDR, so no re-mapping is required.</li>
+    <li>Introduce <strong>class-conditional selective thresholds</strong> &mdash; the novel methodological piece. Two variants: equalized-recall thresholds, and ordinal-distance-weighted thresholds.</li>
+    <li>Report mean &plusmn; SD across 3 seeds.</li>
+</ul>
+
+<h3>7.2 Concrete plan for v2.0.0</h3>
+<ul>
+    <li>Add Deep Ensembles (M=5) and Evidential Deep Learning.</li>
+    <li>Add Messidor-2 external validation (Google's adjudicated 5-class re-grading).</li>
+    <li>Add an <em>equity audit</em> &mdash; do abstention rates correlate with image-quality proxies? With patient demographic strata where available?</li>
+    <li>Submit the consolidated work to IEEE Journal of Biomedical and Health Informatics (J-BHI).</li>
+</ul>
+
+<h1 id="conclusion"><span class="section-num">8.</span> Conclusion</h1>
+
+<p>We have presented a small, honest, fully reproducible benchmark of four post-hoc uncertainty quantification methods on APTOS 2019 diabetic retinopathy grading. The release accompanies open-source code, locked seeds, a public Weights &amp; Biases run, and a Kaggle notebook that reproduces every number in this report end-to-end in about an hour on a single T4 GPU.</p>
+
+<p>The clearest conclusion is that <em>different uncertainty methods optimize for different downstream objectives</em>: Temperature Scaling for calibration, MC Dropout with mutual information for selective-prediction quality, Split Conformal for coverage guarantees. There is no single best method; there is a per-deployment best choice. The per-class behavior of the baseline classifier suggests that the most impactful next methodological step is not another generic uncertainty method, but a class-conditional abstention rule tailored to ordinal DR severity grading. That is the focus of v1.1.0.</p>
+
+<h1 id="how-to-cite"><span class="section-num">9.</span> How to cite</h1>
+
+<pre>@misc{khan2026retinalselective,
+  author       = {Khan, Shahnawaz},
+  title        = {Selective Prediction with Calibrated Uncertainty
+                  for Diabetic Retinopathy Screening:
+                  A Single-Backbone Benchmark on APTOS 2019},
+  year         = {2026},
+  version      = {1.0.0},
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.PENDING},
+  url          = {https://github.com/ShahnawazKakarh/retinal-selective-prediction},
+  orcid        = {0009-0007-4055-6563}
+}</pre>
+
+<p class="small muted">The DOI placeholder will be replaced with the Zenodo Concept DOI assigned at first upload. Subsequent versions (v1.1.0, v2.0.0) will receive new version DOIs under the same Concept DOI on Zenodo.</p>
+
+<h1 id="references">References</h1>
+
+<ol class="refs">
+    <li id="ref-aptos">APTOS 2019 Blindness Detection. Asia Pacific Tele-Ophthalmology Society. <a>https://www.kaggle.com/c/aptos2019-blindness-detection</a></li>
+    <li id="ref-guo">Guo, C., Pleiss, G., Sun, Y., &amp; Weinberger, K. Q. (2017). On Calibration of Modern Neural Networks. ICML.</li>
+    <li id="ref-gal">Gal, Y., &amp; Ghahramani, Z. (2016). Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning. ICML.</li>
+    <li id="ref-romano">Romano, Y., Patterson, E., &amp; Cand&egrave;s, E. J. (2019). Conformalized Quantile Regression. NeurIPS.</li>
+    <li id="ref-angelopoulos">Angelopoulos, A. N., &amp; Bates, S. (2021). A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification. arXiv:2107.07511.</li>
+    <li id="ref-elyaniv">El-Yaniv, R., &amp; Wiener, Y. (2010). On the Foundations of Noise-free Selective Classification. JMLR 11.</li>
+    <li id="ref-geifman">Geifman, Y., &amp; El-Yaniv, R. (2017). Selective Classification for Deep Neural Networks. NeurIPS.</li>
+    <li id="ref-filos">Filos, A., Farquhar, S., Gomez, A. N., Rudner, T. G. J., Kenton, Z., Smith, L., Alizadeh, M., de Kroon, A., &amp; Gal, Y. (2019). A Systematic Comparison of Bayesian Deep Learning Robustness in Diabetic Retinopathy Tasks. NeurIPS BDL Workshop.</li>
+    <li id="ref-band">Band, N., Rudner, T. G. J., Feng, Q., Filos, A., Nado, Z., Dusenberry, M. W., Jerfel, G., Tran, D., &amp; Gal, Y. (2021). Benchmarking Bayesian Deep Learning on Diabetic Retinopathy Detection Tasks. NeurIPS Datasets &amp; Benchmarks.</li>
+    <li id="ref-abdar">Abdar, M. et al. (2021). A review of uncertainty quantification in deep learning: Techniques, applications and challenges. Information Fusion 76.</li>
+    <li id="ref-leibig">Leibig, C., Allken, V., Ayhan, M. S., Berens, P., &amp; Wahl, S. (2017). Leveraging uncertainty information from deep neural networks for disease detection. Nature Scientific Reports 7.</li>
+    <li id="ref-ayhan">Ayhan, M. S., Kuehlewein, L., Aliyeva, G., Inhoffen, W., Ziemssen, F., &amp; Berens, P. (2020). Expert-validated estimation of diagnostic uncertainty for deep neural networks in diabetic retinopathy detection. Medical Image Analysis 64.</li>
+    <li id="ref-linmans">Linmans, J., van der Laak, J., &amp; Litjens, G. (2022). Predictive uncertainty estimation for out-of-distribution detection in digital pathology. MIDL.</li>
+    <li id="ref-kamath">Kamath, A., Jia, R., &amp; Liang, P. (2020). Selective Question Answering under Domain Shift. ACL.</li>
+    <li id="ref-tran">Tran, D. et al. (2022). Plex: Towards Reliability using Pretrained Large Model Extensions. arXiv:2207.07411.</li>
+    <li id="ref-vovk">Vovk, V., Gammerman, A., &amp; Shafer, G. (2005). Algorithmic Learning in a Random World. Springer.</li>
+    <li id="ref-romano2">Romano, Y., Sesia, M., &amp; Cand&egrave;s, E. J. (2020). Classification with Valid and Adaptive Coverage. NeurIPS.</li>
+    <li id="ref-naeini">Naeini, M. P., Cooper, G. F., &amp; Hauskrecht, M. (2015). Obtaining Well Calibrated Probabilities Using Bayesian Binning. AAAI.</li>
+    <li id="ref-nixon">Nixon, J., Dusenberry, M. W., Zhang, L., Jerfel, G., &amp; Tran, D. (2019). Measuring Calibration in Deep Learning. CVPR Workshops.</li>
+    <li id="ref-tan">Tan, M., &amp; Le, Q. V. (2019). EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks. ICML.</li>
+</ol>
+
+</body>
+</html>
