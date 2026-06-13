@@ -1,45 +1,55 @@
 /* ============================================================
-   QA Pulse by SK — Technical Report Style (Dark Theme)
-   Built for WeasyPrint, A4. Matches QA Pulse PDF spec.
+   Academic Technical Report — Light/White Theme
+   Built for WeasyPrint, A4. Print-friendly, professional.
    ============================================================ */
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
-/* --- Brand tokens (locked) --- */
+/* --- Tokens --- */
 :root {
-    --bg:         #0d0f12;
-    --card:       #111418;
-    --border:     #1c2027;
-    --text:       #e8edf5;
-    --muted:      #8b95a3;
-    --blue:       #3b82f6;
-    --blue-dim:   #1d3a6e;
-    --green:      #22c55e;
-    --amber:      #f59e0b;
-    --red:        #ef4444;
-    --purple:     #a78bfa;
+    --bg:           #ffffff;
+    --bg-soft:      #f7f8fa;
+    --bg-card:      #fafbfc;
+    --border:       #e4e7eb;
+    --border-soft:  #eef0f3;
+    --text:         #1a202c;
+    --text-soft:    #3d4853;
+    --muted:        #6b7280;
+    --muted-light:  #9aa3b2;
+
+    --blue:         #1d4ed8;
+    --blue-soft:    #eff4ff;
+    --blue-light:   #dbe7ff;
+
+    --green:        #047857;
+    --green-soft:   #ecfdf5;
+    --amber:        #b45309;
+    --amber-soft:   #fffbeb;
+    --red:          #b91c1c;
+    --red-soft:     #fef2f2;
+    --purple:       #6d28d9;
 }
 
 /* --- Page geometry --- */
 @page {
     size: A4;
-    margin: 22mm 18mm 22mm 18mm;
+    margin: 22mm 20mm 22mm 20mm;
     background: var(--bg);
 
     @top-left {
-        content: "Created by QA Pulse by SK";
+        content: "Selective Prediction with Calibrated Uncertainty for DR Screening";
         font-family: "Inter", sans-serif;
         font-size: 8pt;
         color: var(--muted);
     }
     @top-right {
-        content: "skakarh.com";
+        content: "v1.0.0 · 2026";
         font-family: "Inter", sans-serif;
         font-size: 8pt;
         color: var(--muted);
     }
     @bottom-left {
-        content: "Selective Prediction with Calibrated Uncertainty for DR Screening";
+        content: "Shahnawaz Khan · ORCID 0009-0007-4055-6563";
         font-family: "Inter", sans-serif;
         font-size: 8pt;
         color: var(--muted);
@@ -66,128 +76,135 @@ html, body {
     color: var(--text);
     font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
     font-size: 10.5pt;
-    line-height: 1.55;
+    line-height: 1.6;
     margin: 0;
     padding: 0;
+    -webkit-font-smoothing: antialiased;
 }
 
-p { margin: 0 0 0.7em 0; }
+p { margin: 0 0 0.7em 0; color: var(--text-soft); }
 
 a { color: var(--blue); text-decoration: none; }
 
-code, pre, .mono { font-family: "JetBrains Mono", "Menlo", "Consolas", monospace; font-size: 9.5pt; }
+ul, ol { color: var(--text-soft); }
+li { margin-bottom: 0.25em; }
+
+code, pre, .mono {
+    font-family: "JetBrains Mono", "Menlo", "Consolas", monospace;
+    font-size: 9.5pt;
+}
 
 code {
-    background: var(--card);
-    border: 1px solid var(--border);
-    padding: 0.1em 0.35em;
+    background: var(--bg-soft);
+    border: 1px solid var(--border-soft);
+    padding: 0.1em 0.4em;
     border-radius: 3px;
     color: var(--purple);
+    font-size: 9pt;
 }
 
 pre {
-    background: var(--card);
-    border: 1px solid var(--border);
+    background: var(--bg-soft);
+    border: 1px solid var(--border-soft);
     padding: 0.8em 1em;
     border-radius: 6px;
     color: var(--text);
     overflow-x: auto;
     margin: 0.6em 0 1em 0;
+    line-height: 1.5;
 }
 
-/* --- Cover page --- */
+pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--text);
+}
+
+/* --- Cover page (clean white academic style) --- */
 .cover {
     page: cover;
     page-break-after: always;
-    background:
-        radial-gradient(circle at 25% 20%, rgba(59,130,246,0.10), transparent 55%),
-        radial-gradient(circle at 80% 80%, rgba(167,139,250,0.08), transparent 50%),
-        linear-gradient(180deg, #0d0f12 0%, #0a0c0f 100%);
+    background: var(--bg);
     color: var(--text);
     width: 210mm;
     height: 297mm;
     box-sizing: border-box;
-    padding: 32mm 22mm 26mm 22mm;
+    padding: 30mm 25mm 22mm 25mm;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     position: relative;
-}
-
-.cover::before {
-    /* faint grid texture */
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
+    border-top: 4px solid var(--blue);
 }
 
 .cover-eyebrow {
     font-size: 9pt;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--blue);
     font-weight: 600;
-    margin-bottom: 6mm;
+    margin-bottom: 8mm;
 }
 
 .cover-title {
     font-family: "Inter", sans-serif;
-    font-size: 30pt;
+    font-size: 28pt;
     font-weight: 700;
-    line-height: 1.18;
+    line-height: 1.2;
     color: var(--text);
-    margin: 0 0 10mm 0;
+    margin: 0 0 8mm 0;
     max-width: 160mm;
+    letter-spacing: -0.01em;
 }
 
 .cover-subtitle {
-    font-size: 13pt;
+    font-size: 12.5pt;
     color: var(--muted);
-    line-height: 1.45;
-    margin-bottom: 8mm;
+    line-height: 1.5;
+    margin-bottom: 6mm;
     max-width: 150mm;
+    font-weight: 400;
 }
 
 .cover-meta {
     border-top: 1px solid var(--border);
-    padding-top: 6mm;
+    border-bottom: 1px solid var(--border);
+    padding: 5mm 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6mm 10mm;
+    gap: 5mm 10mm;
     font-size: 9.5pt;
 }
 
 .cover-meta .label {
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     font-size: 7.5pt;
-    margin-bottom: 1mm;
+    margin-bottom: 1.5mm;
+    font-weight: 500;
 }
 
 .cover-meta .value {
     color: var(--text);
     font-weight: 500;
+    font-size: 10pt;
 }
 
 .cover-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 4mm;
-    margin: 8mm 0;
+    gap: 3mm;
+    margin: 6mm 0;
 }
 
 .stat {
-    background: rgba(17,20,24,0.7);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-left: 3px solid var(--blue);
-    padding: 4mm 4mm;
-    border-radius: 6px;
+    padding: 4mm;
+    border-radius: 4px;
 }
 
 .stat .stat-value {
@@ -203,7 +220,8 @@ pre {
     font-size: 7.5pt;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    margin-top: 1.5mm;
+    margin-top: 2mm;
+    font-weight: 500;
 }
 
 .cover-footer {
@@ -215,43 +233,46 @@ pre {
     justify-content: space-between;
 }
 
-/* --- Section / heading styles --- */
+/* --- Headings --- */
 h1, h2, h3, h4 {
     color: var(--text);
     font-family: "Inter", sans-serif;
-    line-height: 1.25;
+    line-height: 1.3;
     font-weight: 700;
 }
 
 h1 {
-    font-size: 19pt;
-    margin: 14mm 0 4mm 0;
+    font-size: 17pt;
+    margin: 12mm 0 4mm 0;
     border-bottom: 2px solid var(--blue);
     padding-bottom: 1.5mm;
     page-break-after: avoid;
+    letter-spacing: -0.01em;
 }
 
 h2 {
-    font-size: 14pt;
-    margin: 8mm 0 3mm 0;
+    font-size: 13pt;
+    margin: 7mm 0 3mm 0;
     color: var(--blue);
     page-break-after: avoid;
+    font-weight: 600;
 }
 
 h3 {
-    font-size: 11.5pt;
-    margin: 6mm 0 2mm 0;
+    font-size: 11pt;
+    margin: 5mm 0 2mm 0;
     color: var(--text);
     font-weight: 600;
     page-break-after: avoid;
 }
 
 h4 {
-    font-size: 10.5pt;
+    font-size: 9.5pt;
     margin: 4mm 0 1mm 0;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    font-weight: 600;
 }
 
 /* --- Section number prefixes --- */
@@ -259,22 +280,22 @@ h4 {
     color: var(--blue);
     margin-right: 0.4em;
     font-family: "JetBrains Mono", monospace;
+    font-weight: 600;
 }
 
-/* --- Tables --- */
+/* --- Tables (clean academic style) --- */
 table {
     width: 100%;
     border-collapse: collapse;
     margin: 3mm 0 6mm 0;
     font-size: 9.5pt;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
+    background: var(--bg);
+    border-top: 1.5px solid var(--text);
+    border-bottom: 1.5px solid var(--text);
 }
 
 thead {
-    background: var(--blue-dim);
+    background: var(--bg-soft);
 }
 
 th {
@@ -282,20 +303,26 @@ th {
     color: var(--text);
     font-weight: 600;
     padding: 2.5mm 3mm;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--text);
     font-size: 9pt;
+    letter-spacing: 0.02em;
 }
 
 td {
     padding: 2mm 3mm;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--text-soft);
     vertical-align: top;
+    font-size: 9.5pt;
 }
 
 tr:last-child td { border-bottom: none; }
 
-td.num, th.num { font-family: "JetBrains Mono", monospace; text-align: right; }
+td.num, th.num {
+    font-family: "JetBrains Mono", monospace;
+    text-align: right;
+    color: var(--text);
+}
 
 .best { color: var(--green); font-weight: 600; }
 .warn { color: var(--amber); }
@@ -304,29 +331,32 @@ td.num, th.num { font-family: "JetBrains Mono", monospace; text-align: right; }
 /* --- Callout / note boxes --- */
 .callout {
     border-left: 3px solid var(--blue);
-    background: rgba(59,130,246,0.06);
+    background: var(--blue-soft);
     padding: 3mm 5mm;
     margin: 3mm 0 4mm 0;
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 3px 3px 0;
     font-size: 10pt;
-    color: var(--text);
+    color: var(--text-soft);
 }
 
-.callout.amber { border-left-color: var(--amber); background: rgba(245,158,11,0.06); }
-.callout.green { border-left-color: var(--green); background: rgba(34,197,94,0.06); }
-.callout.red   { border-left-color: var(--red); background: rgba(239,68,68,0.06); }
-.callout.muted { border-left-color: var(--border); background: rgba(255,255,255,0.02); }
+.callout.amber { border-left-color: var(--amber); background: var(--amber-soft); }
+.callout.green { border-left-color: var(--green); background: var(--green-soft); }
+.callout.red   { border-left-color: var(--red);   background: var(--red-soft); }
+.callout.muted { border-left-color: var(--border); background: var(--bg-soft); }
 
 .callout strong { color: var(--blue); }
+.callout.amber strong { color: var(--amber); }
+.callout.green strong { color: var(--green); }
+.callout.red strong { color: var(--red); }
 
 /* --- Abstract block --- */
 .abstract {
-    background: var(--card);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-left: 3px solid var(--blue);
     padding: 5mm 6mm;
     margin: 4mm 0 6mm 0;
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
 .abstract h2 {
@@ -334,16 +364,18 @@ td.num, th.num { font-family: "JetBrains Mono", monospace; text-align: right; }
     color: var(--blue);
     font-size: 11pt;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    border-bottom: none;
 }
 
-.abstract p { font-size: 10pt; }
+.abstract p { font-size: 10pt; color: var(--text); }
 
 /* --- Citation list --- */
 ol.refs {
-    padding-left: 5mm;
+    padding-left: 6mm;
     font-size: 9.5pt;
-    color: var(--text);
+    color: var(--text-soft);
 }
 
 ol.refs li {
@@ -352,7 +384,7 @@ ol.refs li {
     line-height: 1.45;
 }
 
-ol.refs li a { word-break: break-all; }
+ol.refs li a { word-break: break-all; color: var(--blue); }
 
 /* --- Misc --- */
 .muted { color: var(--muted); }
