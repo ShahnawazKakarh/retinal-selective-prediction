@@ -4,7 +4,7 @@ Single source of truth for paper-ready numbers. Auto-generated row numbers are f
 
 **Git SHA of this result set:** `b196c59` (fix: calibrate_probs moves logits to temperature's device)
 **Run date:** 2026-06-12
-**W&B run:** [`p3dbnx3q`](https://wandb.ai/qapulsebysk/retinal-selective-prediction/runs/p3dbnx3q)
+**W&B run id:** `p3dbnx3q` (private)
 **Compute:** Kaggle T4 GPU
 **Training time:** ~50 min, early-stopped at epoch 24 (best epoch 17)
 

@@ -101,7 +101,7 @@ Each of these strengthens the paper but is *not* required for v1.0.0 or v1.1.0.
 - All scripts are pure Python with explicit CLI args, no notebook hidden state.
 - One Kaggle notebook contains the complete pipeline (clone → install → train → evaluate → all uncertainty methods → save outputs). Re-running it on Kaggle T4 produces all v1.0.0 numbers in ~45 minutes.
 - The git SHA used to produce each result is saved inside the result file (`outputs/git_sha.txt`).
-- W&B run is permanent and public: `qapulsebysk/retinal-selective-prediction`.
+- W&B run id is recorded in the result files for traceability.
 
 ---
 
