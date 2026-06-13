@@ -5,7 +5,7 @@ version: "1.0.0"
 date-released: "2026-06-13"
 authors:
   - family-names: "Khan"
-    given-names: "Shahnawaz"
+    given-names: "Muhammad Shahnawaz"
     orcid: "https://orcid.org/0009-0007-4055-6563"
     affiliation: "Independent Researcher"
     email: "shahnawaz.jrw@gmail.com"
@@ -46,9 +46,9 @@ preferred-citation:
   title: "Selective Prediction with Calibrated Uncertainty for Diabetic Retinopathy Screening: A Single-Backbone Benchmark on APTOS 2019"
   authors:
     - family-names: "Khan"
-      given-names: "Shahnawaz"
+      given-names: "Muhammad Shahnawaz"
       orcid: "https://orcid.org/0009-0007-4055-6563"
   year: 2026
   version: "1.0.0"
-  doi: "10.5281/zenodo.PENDING"
+  doi: "10.5281/zenodo.20681415"
   url: "https://github.com/ShahnawazKakarh/retinal-selective-prediction"

@@ -2,6 +2,7 @@
 
 > Calibrated uncertainty and **selective prediction** for retinal disease screening — *"when should a deep model abstain and route to a clinician, and how much does it actually help?"*
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20681415.svg)](https://doi.org/10.5281/zenodo.20681415)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C.svg?logo=pytorch)](https://pytorch.org/)
 [![timm](https://img.shields.io/badge/timm-1.x-1F77B4.svg)](https://github.com/huggingface/pytorch-image-models)
@@ -280,7 +281,23 @@ This project is published as **versioned Zenodo releases**, each with its own DO
 **Built technical report PDF source:** [`report/`](report/) (run `python report/build.py` to rebuild)
 **Machine-readable citation:** [`CITATION.cff`](CITATION.cff)
 
-If you use this benchmark in your work, please cite it via the `CITATION.cff` metadata (DOI added once Zenodo mints v1.0.0).
+If you use this benchmark in your work, please cite it using the `CITATION.cff` metadata or the BibTeX below:
+
+```bibtex
+@misc{khan2026retinalselective,
+  author    = {Khan, Muhammad Shahnawaz},
+  title     = {Selective Prediction with Calibrated Uncertainty
+               for Diabetic Retinopathy Screening:
+               A Single-Backbone Benchmark on APTOS 2019},
+  year      = {2026},
+  version   = {1.0.0},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.20681415},
+  url       = {https://github.com/ShahnawazKakarh/retinal-selective-prediction}
+}
+```
+
+The Zenodo Concept DOI `10.5281/zenodo.20681415` always resolves to the latest version. v1.0.0 specifically is at `10.5281/zenodo.20681524`.
 
 ---
 
