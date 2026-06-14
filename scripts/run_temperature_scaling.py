@@ -83,7 +83,7 @@ def main() -> None:
 
     # ---- Collect logits ----
     print("Collecting val logits...")
-    val_logits, val_labels, _ = collect_logits(model, val_loader, device)
+    val_logits, val_labels, val_ids = collect_logits(model, val_loader, device)
     print("Collecting test logits...")
     test_logits, test_labels, test_ids = collect_logits(model, test_loader, device)
 
@@ -122,6 +122,18 @@ def main() -> None:
         **{f"p_{i}": probs_cal[:, i] for i in range(probs_cal.shape[1])},
     })
     pred_df.to_csv(args.run_dir / "temperature_scaling_predictions.csv", index=False)
+
+    # ---- Also persist CALIBRATED val predictions (needed for downstream OACSP calibration) ----
+    probs_val_cal = scaler.calibrate_probs(val_logits)
+    val_preds_cal = probs_val_cal.argmax(axis=1)
+    val_pred_df = pd.DataFrame({
+        "id_code": val_ids,
+        "label": val_labels,
+        "pred": val_preds_cal,
+        "confidence": probs_val_cal.max(axis=1),
+        **{f"p_{i}": probs_val_cal[:, i] for i in range(probs_val_cal.shape[1])},
+    })
+    val_pred_df.to_csv(args.run_dir / "temperature_scaling_val_predictions.csv", index=False)
 
     # ---- Selective summary on calibrated probs ----
     # Single signal: negative max-confidence (since T-scaling doesn't introduce
@@ -163,6 +175,7 @@ def main() -> None:
 
     print(f"\nWrote: {args.run_dir / 'temperature_scaling.json'}")
     print(f"       {args.run_dir / 'temperature_scaling_predictions.csv'}")
+    print(f"       {args.run_dir / 'temperature_scaling_val_predictions.csv'}")
     print(f"       {args.run_dir / 'temperature_scaling_selective.json'}")
 
 

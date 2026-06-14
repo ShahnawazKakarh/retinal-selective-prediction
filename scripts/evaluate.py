@@ -95,10 +95,13 @@ def main() -> None:
     print(f"Device: {device}")
 
     # ---- Data ----
-    _train_df, _val_df, test_df = load_splits(args.splits_dir)
-    test_ds = APTOS2019Dataset(
-        test_df, args.images_dir,
-        transform=build_eval_transform(cfg.data.image_size),
+    _train_df, val_df, test_df = load_splits(args.splits_dir)
+    eval_tf = build_eval_transform(cfg.data.image_size)
+    val_ds = APTOS2019Dataset(val_df, args.images_dir, transform=eval_tf)
+    test_ds = APTOS2019Dataset(test_df, args.images_dir, transform=eval_tf)
+    val_loader = DataLoader(
+        val_ds, batch_size=args.batch_size, shuffle=False,
+        num_workers=cfg.data.num_workers, pin_memory=True,
     )
     test_loader = DataLoader(
         test_ds, batch_size=args.batch_size, shuffle=False,
@@ -117,7 +120,12 @@ def main() -> None:
     print(f"Loaded checkpoint from epoch {ckpt.get('epoch')} "
           f"(val_kappa={ckpt.get('val_kappa'):.4f})")
 
-    # ---- Predict ----
+    # ---- Predict on val (for downstream selective methods that need calibration) ----
+    val_probs, val_labels, val_id_codes = predict(model, val_loader, device)
+    val_preds = val_probs.argmax(axis=1)
+    val_confidences = val_probs.max(axis=1)
+
+    # ---- Predict on test ----
     probs, labels, id_codes = predict(model, test_loader, device)
     preds = probs.argmax(axis=1)
     confidences = probs.max(axis=1)
@@ -153,6 +161,15 @@ def main() -> None:
         **pred_cols,
     }).to_csv(out_dir / "predictions.csv", index=False)
 
+    val_pred_cols = {f"p_{i}": val_probs[:, i] for i in range(cfg.data.num_classes)}
+    pd.DataFrame({
+        "id_code": val_id_codes,
+        "label": val_labels,
+        "pred": val_preds,
+        "confidence": val_confidences,
+        **val_pred_cols,
+    }).to_csv(out_dir / "val_predictions.csv", index=False)
+
     cm = confusion_matrix(labels, preds, labels=list(range(cfg.data.num_classes)))
     plot_confusion(cm, APTOS2019Dataset.CLASS_NAMES, out_dir / "confusion_matrix.png")
     plot_reliability_diagram(
@@ -163,6 +180,7 @@ def main() -> None:
 
     print(f"\nWrote: {out_dir / 'metrics.json'}")
     print(f"       {out_dir / 'predictions.csv'}")
+    print(f"       {out_dir / 'val_predictions.csv'}")
     print(f"       {out_dir / 'confusion_matrix.png'}")
     print(f"       {out_dir / 'reliability_diagram.png'}")
 
