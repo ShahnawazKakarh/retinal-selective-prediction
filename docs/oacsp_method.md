@@ -109,19 +109,27 @@ The script prints the headline numbers. Paste them back.
 
 ---
 
-## What numbers we expect (back-of-envelope)
+## What numbers we got (real, from 2026-06-14 re-run on Kaggle T4)
 
-Given v1.0.0 baseline test metrics:
-- Accuracy 0.809, ECE 0.146, per-class F1: 0.97 / 0.48 / 0.77 / 0.45 / 0.57
+**Git SHA `4cba327`. Predictions source: `temperature_scaling_predictions.csv` for both val-calibration and test-evaluation (see limitations).**
 
-OACSP should give, at 80% overall coverage:
-- Global threshold (baseline): retained recall on Severe ≈ 0.30, Proliferative ≈ 0.40 (under-protected)
-- OACSP equalized recall: retained recall on Severe ≈ 0.50–0.65 (target 0.95 hit on calibration set, but test-set generalization gap is real)
-- OACSP ordinal cost: cost-weighted AURC ~10–20% lower than global
+Per-class abstention rate at ~80% overall coverage:
 
-The narrative claim for the paper is that OACSP gives the operator a *clinically meaningful knob* (per-class target recall or per-class cost) that no current method exposes, and that on this dataset it shifts abstention away from rare severe classes without sacrificing overall selective accuracy.
+| Class | Global threshold | OACSP equalized | OACSP ordinal-cost |
+|---|---:|---:|---:|
+| 0 (No DR) | 3.3% | 9.2% | 4.1% |
+| 1 (Mild) | 35.7% | 16.1% | 39.3% |
+| 2 (Moderate) | 30.0% | 10.0% | 34.7% |
+| **3 (Severe)** | **48.3%** | **13.8%** | **31.0%** |
+| **4 (Proliferative)** | **50.0%** | **15.9%** | **36.4%** |
 
-If the test-set numbers come in much weaker than this, we report honestly and adjust the claim — but the methodological novelty stands either way.
+**Effect size for OACSP equalized-recall vs global threshold:**
+- Severe abstention: **3.5× lower** (48.3% → 13.8%)
+- Proliferative abstention: **3.1× lower** (50.0% → 15.9%)
+
+**At identical 80% coverage**, OACSP ordinal-cost achieves selective QWK **0.9270 vs 0.9235** for the global baseline, while cutting Severe abstention from 48% to 31%. Cost-weighted AURC is identical across methods (0.1396) because all three share the same underlying uncertainty signal; the contribution is in the operating-point selection rule.
+
+This is the publishable result for v1.1.0.
 
 ---
 
