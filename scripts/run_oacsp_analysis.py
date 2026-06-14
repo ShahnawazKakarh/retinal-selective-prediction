@@ -49,19 +49,21 @@ from src.selective.class_conditional import (
 def _load_predictions_csv(path: Path) -> tuple[np.ndarray, np.ndarray]:
     """Load predictions CSV and return (probs[N, 5], y[N]).
 
-    Expected columns: `label`, plus either `prob_0`..`prob_4` (softmax cols) or
-    `prob_<class_index>` style. Falls back to looking for any columns matching
-    a `prob_` prefix.
+    Accepts either `prob_0`..`prob_4` or `p_0`..`p_4` as the softmax column
+    naming convention. Requires a `label` column with the true class.
     """
     df = pd.read_csv(path)
+    # Try both naming conventions
     prob_cols = sorted([c for c in df.columns if c.startswith("prob_")])
     if not prob_cols:
+        prob_cols = sorted([c for c in df.columns if c.startswith("p_") and c[2:].isdigit()])
+    if not prob_cols:
         raise ValueError(
-            f"No prob_* columns found in {path}. Got columns: {list(df.columns)}"
+            f"No prob_* or p_* columns found in {path}. Got columns: {list(df.columns)}"
         )
     if len(prob_cols) != 5:
         raise ValueError(
-            f"Expected 5 prob_* columns for 5-class DR; got {len(prob_cols)}: {prob_cols}"
+            f"Expected 5 softmax columns for 5-class DR; got {len(prob_cols)}: {prob_cols}"
         )
     if "label" not in df.columns:
         raise ValueError(f"No 'label' column in {path}. Got: {list(df.columns)}")
