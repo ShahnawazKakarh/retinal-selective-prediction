@@ -9,6 +9,16 @@ authors:
     orcid: "https://orcid.org/0009-0007-4055-6563"
     affiliation: "Independent Researcher"
     email: "shahnawaz.jrw@gmail.com"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.20681415"
+    description: "Zenodo Concept DOI (always resolves to latest version)"
+  - type: doi
+    value: "10.5281/zenodo.20695855"
+    description: "Zenodo version DOI for v1.1.0"
+  - type: doi
+    value: "10.5281/zenodo.20681524"
+    description: "Zenodo version DOI for v1.0.0"
 repository-code: "https://github.com/ShahnawazKakarh/retinal-selective-prediction"
 url: "https://github.com/ShahnawazKakarh/retinal-selective-prediction"
 license: MIT
