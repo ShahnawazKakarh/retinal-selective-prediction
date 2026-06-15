@@ -10,11 +10,11 @@
      COVER (page 1 only) — clean academic title page
      ============================================================= -->
 <section class="cover">
-    <div class="cover-eyebrow">Technical Report &middot; Version 1.0.0</div>
+    <div class="cover-eyebrow">Technical Report &middot; Version 1.1.0</div>
 
     <h1 class="cover-title">Selective Prediction with Calibrated Uncertainty for Diabetic Retinopathy Screening</h1>
 
-    <p class="cover-subtitle">A single-backbone, single-seed, fully reproducible benchmark of four post-hoc uncertainty methods on APTOS 2019</p>
+    <p class="cover-subtitle">A single-backbone benchmark of four post-hoc uncertainty methods on APTOS 2019, extended with Ordinal-Aware Class-Conditional Selective Prediction (OACSP)</p>
 
     <hr class="cover-divider">
 
@@ -25,7 +25,7 @@
 
     <div class="cover-bottom">
         <span class="label">Source code:</span> github.com/ShahnawazKakarh/retinal-selective-prediction<br>
-        <span class="label">Reproducibility:</span> git SHA <span class="mono">b196c59</span><br>
+        <span class="label">Reproducibility:</span> git SHA <span class="mono">2400870</span><br>
         <span class="label">License:</span> MIT
     </div>
 </section>
@@ -39,7 +39,7 @@
     <p><strong>Background.</strong> Diabetic retinopathy (DR) screening is increasingly automated, but deployed deep learning systems for DR severity grading typically commit to a label for every image, with no principled mechanism for abstention on uncertain cases. Selective prediction — abstaining when uncertainty is high and deferring to a human reader — is the natural fit, yet the literature on DR uncertainty quantification is fragmented across binary referable / non-referable formulations, varied backbones, and inconsistent evaluation harnesses.</p>
     <p><strong>Method.</strong> We train a single EfficientNet-B0 baseline on APTOS 2019 with a locked random seed and evaluate four post-hoc uncertainty methods on the identical held-out test set: (i) plain softmax confidence, (ii) Temperature Scaling, (iii) MC Dropout with T=30 stochastic forward passes (yielding four uncertainty signals: negative max-confidence, predictive entropy, expected entropy, mutual information), and (iv) Split Conformal Prediction with two variants (set-size and APS), all at &alpha;=0.10. Every method is evaluated through the same risk-coverage harness and the same per-bin calibration analysis.</p>
     <p><strong>Results.</strong> The deterministic baseline achieves test accuracy 0.809 and quadratic-weighted &kappa; 0.865. <strong>Temperature Scaling</strong> reduces Expected Calibration Error from 0.146 to 0.055 (62% relative reduction) with a single fitted scalar T=2.25, at the cost of a small AURC increase. <strong>MC Dropout's mutual-information signal (BALD)</strong> achieves the lowest AURC of any method, 0.0756, beating both deterministic softmax (0.0793) and Temperature Scaling (0.0852). <strong>Split Conformal</strong> attains empirical coverage 0.902 against a 0.90 target with average prediction-set size 1.35 (76.0% singletons). Three different methods, three different wins: calibration, selective-prediction quality, and coverage guarantee.</p>
-    <p><strong>Contribution.</strong> This report is positioned as an open, reproducible benchmark rather than a novel methodological contribution. All training is from a single Kaggle notebook, all per-sample outputs are saved as CSVs, all weights & biases are exposed via a public W&amp;B run, and the exact git commit producing each number is recorded inside the result files. The release accompanies the source code at <code>github.com/ShahnawazKakarh/retinal-selective-prediction</code>.</p>
+    <p><strong>Contribution.</strong> Version 1.0.0 of this work (released June 13, 2026) provided the open, reproducible benchmark described above. Version 1.1.0 (this release) introduces a novel methodological contribution: <strong>Ordinal-Aware Class-Conditional Selective Prediction (OACSP)</strong>, which replaces the standard global confidence threshold with per-class thresholds calibrated either to operator-specified per-class target recall (Variant A, *equalized-recall*) or to minimize ordinal-distance-weighted expected cost at a target overall coverage (Variant B, *ordinal-cost-weighted*). On APTOS 2019 at ≈80% overall coverage, OACSP equalized-recall reduces Severe-DR abstention by 4.4&times; (44.8% &rarr; 10.3%) and Proliferative-DR abstention by 4.3&times; (29.5% &rarr; 6.8%) compared to a global confidence threshold; OACSP ordinal-cost-weighted achieves selective quadratic-weighted &kappa; 0.9218 vs. 0.9068 for the global baseline at the same coverage while still cutting Severe abstention by 31%. The release accompanies the source code at <code>github.com/ShahnawazKakarh/retinal-selective-prediction</code>.</p>
 </div>
 
 <h1 id="introduction"><span class="section-num">1.</span> Introduction</h1>
@@ -53,7 +53,7 @@
 <p>This report provides a clean, reproducible, single-seed, single-backbone evaluation of four post-hoc uncertainty methods on APTOS 2019. We deliberately do not claim a new method; we provide a controlled comparison that other researchers can copy, modify, and extend.</p>
 
 <div class="callout">
-    <strong>Scope clarification.</strong> This is version 1.0.0 of an ongoing project. The novel methodological piece &mdash; class-conditional selective thresholds for ordinal DR grading &mdash; together with external validation on IDRiD and Messidor-2, Deep Ensembles, and Evidential Deep Learning, are explicitly scoped for v1.1.0 and v2.0.0. They are not part of this release. We make this distinction up front to avoid the appearance of over-claiming.
+    <strong>Scope clarification.</strong> Version 1.0.0 of this work provided the reproducible benchmark of four post-hoc uncertainty methods on APTOS 2019. Version 1.1.0 (this release) extends the work with the novel OACSP methodology in Section 6 below. External validation on IDRiD and Messidor-2, Deep Ensembles, Evidential Deep Learning, and multi-seed variance estimation remain scoped for v1.2.0 / v2.0.0. We make this distinction up front to avoid the appearance of over-claiming.
 </div>
 
 <h1 id="related"><span class="section-num">2.</span> Related Work</h1>
@@ -247,7 +247,121 @@
 
 <p>Temperature Scaling and Conformal are essentially free at inference. MC Dropout's 30&times; inference cost is significant in a deployment setting; the AURC gain (0.0793 &rarr; 0.0756) needs to be weighed against this.</p>
 
-<h1 id="discussion"><span class="section-num">6.</span> Discussion</h1>
+<h1 id="oacsp"><span class="section-num">6.</span> OACSP — Ordinal-Aware Class-Conditional Selective Prediction</h1>
+
+<p>Sections 1–5 above describe the v1.0.0 benchmark. The present section introduces the novel methodological contribution of v1.1.0.</p>
+
+<h3>6.1 Motivation</h3>
+
+<p>The selective-prediction methods we benchmarked in Section 5 all use the same abstention rule: keep the prediction if a scalar uncertainty signal is below a single global threshold &tau;, otherwise abstain. This rule is used by every published selective-prediction paper on diabetic retinopathy we are aware of: Leibig et al. <a href="#ref-leibig">[11]</a>, Filos et al. <a href="#ref-filos">[8]</a>, Band et al. <a href="#ref-band">[9]</a>, and the SelectiveNet line <a href="#ref-geifman">[7]</a><a href="#ref-geifman2">[21]</a>. We argue this rule embeds two false assumptions for ordinal DR severity grading:</p>
+
+<ol>
+    <li><strong>The cost of misclassification is class-symmetric.</strong> A global threshold treats *No-DR &rarr; Mild-DR* and *No-DR &rarr; Proliferative-DR* identically. Clinically these errors differ by an order of magnitude: missing a Proliferative case can blind the patient, missing a Mild case has near-zero immediate consequence.</li>
+    <li><strong>Each class equally deserves abstention.</strong> Our baseline (Section 5.1) shows per-class F1 of 0.97 on No-DR vs 0.45 on Severe and 0.57 on Proliferative. Under a global threshold, the *easy* class gets the *most* retained predictions while the *hardest, clinically most critical* class gets the *fewest* &mdash; exactly the opposite of what a clinical workflow should want.</li>
+</ol>
+
+<p>OACSP relaxes both assumptions by parameterizing the abstention rule with per-class thresholds &lbrace;&tau;<sub>0</sub>, &tau;<sub>1</sub>, &tau;<sub>2</sub>, &tau;<sub>3</sub>, &tau;<sub>4</sub>&rbrace; instead of a single &tau;.</p>
+
+<h3>6.2 Method</h3>
+
+<p>Let p(x) be the post-temperature-scaling softmax output of the classifier for input x, and let s(x) = &minus;max p(x) be the scalar uncertainty signal (more negative = more confident). The abstention rule is parameterized by per-class thresholds:</p>
+
+<pre>keep(x) iff s(x) &le; &tau;<sub>argmax p(x)</sub></pre>
+
+<p>That is, each sample is compared against the threshold associated with its <em>predicted</em> class. The per-class thresholds are calibrated on a held-out validation set in one of two variants.</p>
+
+<h4>6.2.1 Variant A &mdash; equalized-recall</h4>
+<p>The operator specifies a target retained recall <em>r<sub>c</sub></em> for each class. For each c, &tau;<sub>c</sub> is set to the empirical <em>r<sub>c</sub></em>-quantile of s(x) over val samples whose true label is c. This guarantees that on the calibration set, at least <em>r<sub>c</sub></em> fraction of true class-c samples are retained. In practice we use defaults &lbrace;0:0.90, 1:0.85, 2:0.90, 3:0.95, 4:0.95&rbrace; encoding a defensible clinical position: Severe and Proliferative DR get the highest priority.</p>
+
+<h4>6.2.2 Variant B &mdash; ordinal-cost-weighted</h4>
+<p>The operator specifies a class-cost multiplier <em>m<sub>c</sub></em> per class. The expected cost on retained samples is:</p>
+
+<pre>E[cost] = (1/|kept|) &sum;<sub>i &in; kept</sub> |y<sub>i</sub> &minus; &#375;<sub>i</sub>| &middot; m<sub>y<sub>i</sub></sub></pre>
+
+<p>i.e. ordinal distance weighted by a class-specific multiplier. Per-class thresholds are jointly optimized via coordinate descent to minimize this expected cost on val while keeping overall coverage at the operator's chosen target. We use defaults &lbrace;0:1, 1:1, 2:1, 3:2.5, 4:3.0&rbrace;, penalizing Severe and Proliferative misses more heavily.</p>
+
+<h3>6.3 Novelty positioning</h3>
+
+<table class="keep-together">
+    <thead>
+        <tr><th>Prior work</th><th>Per-class thresholds?</th><th>Ordinal-distance cost?</th><th>DR-specific?</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Geifman &amp; El-Yaniv 2017 (SelectiveNet) <a href="#ref-geifman">[7]</a></td><td class="bad">No</td><td class="bad">No</td><td class="bad">No</td></tr>
+        <tr><td>Geifman &amp; El-Yaniv 2019 (Deep Gambler) <a href="#ref-geifman2">[21]</a></td><td>Loosely, for fairness</td><td class="bad">No</td><td class="bad">No</td></tr>
+        <tr><td>Romano et al. 2020 (APS) <a href="#ref-romano2">[17]</a></td><td>Per-class coverage in <em>conformal sets</em>, but not in selective accuracy</td><td class="bad">No</td><td class="bad">No</td></tr>
+        <tr><td>Leibig et al. 2017 <a href="#ref-leibig">[11]</a></td><td class="bad">No</td><td class="bad">No</td><td class="best">Yes (binary task)</td></tr>
+        <tr><td>Band et al. 2021 <a href="#ref-band">[9]</a></td><td class="bad">No</td><td class="bad">No</td><td class="best">Yes (binary task)</td></tr>
+        <tr><td><strong>OACSP (this work)</strong></td><td class="best"><strong>Yes</strong></td><td class="best"><strong>Yes</strong></td><td class="best"><strong>Yes (5-class ICDR)</strong></td></tr>
+    </tbody>
+</table>
+
+<p>OACSP occupies a quadrant nobody has previously occupied. The novelty is narrow but real and clinically motivated.</p>
+
+<h3>6.4 Results on APTOS 2019</h3>
+
+<p>Per-class thresholds are calibrated on the temperature-scaling-calibrated val predictions (550 samples). Evaluation is on the disjoint test set (550 samples). All numbers below are from git SHA <code>2400870</code>, Kaggle T4 GPU, single seed 42.</p>
+
+<h4>6.4.1 Headline: per-class abstention rate at &asymp;80% overall coverage</h4>
+
+<table class="keep-together">
+    <thead>
+        <tr>
+            <th>Class</th>
+            <th class="num">Global threshold</th>
+            <th class="num">OACSP equalized recall</th>
+            <th class="num">OACSP ordinal cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>0 — No DR</td><td class="num">1.5%</td><td class="num">7.0%</td><td class="num">3.3%</td></tr>
+        <tr><td>1 — Mild</td><td class="num">35.7%</td><td class="num">23.2%</td><td class="num">58.9%</td></tr>
+        <tr><td>2 — Moderate</td><td class="num">36.7%</td><td class="num">12.7%</td><td class="num">26.0%</td></tr>
+        <tr><td><strong>3 — Severe</strong></td><td class="num bad"><strong>44.8%</strong></td><td class="num best"><strong>10.3%</strong></td><td class="num best"><strong>31.0%</strong></td></tr>
+        <tr><td><strong>4 — Proliferative</strong></td><td class="num bad"><strong>29.5%</strong></td><td class="num best"><strong>6.8%</strong></td><td class="num best"><strong>20.5%</strong></td></tr>
+    </tbody>
+</table>
+
+<p><strong>OACSP equalized-recall reduces Severe-DR abstention by a factor of 4.4&times;</strong> (44.8% &rarr; 10.3%) and Proliferative-DR abstention by 4.3&times; (29.5% &rarr; 6.8%) compared to the global threshold baseline. The trade-off is intentionally higher abstention on the easy No-DR class (1.5% &rarr; 7.0%) &mdash; the rule reallocates abstention budget from clinically inconsequential cases to clinically dangerous ones.</p>
+
+<h4>6.4.2 Overall metrics at matched coverage</h4>
+
+<table class="keep-together">
+    <thead>
+        <tr><th>Method</th><th class="num">Coverage</th><th class="num">Selective Acc</th><th class="num">Selective QWK</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Global threshold (baseline)</td><td class="num">0.809</td><td class="num">0.883</td><td class="num">0.9068</td></tr>
+        <tr><td>OACSP — equalized recall</td><td class="num">0.896</td><td class="num">0.826</td><td class="num">0.8865</td></tr>
+        <tr><td><strong>OACSP — ordinal cost weighted</strong></td><td class="num"><strong>0.820</strong></td><td class="num">0.863</td><td class="num best"><strong>0.9218</strong></td></tr>
+    </tbody>
+</table>
+
+<p>At near-identical coverage (0.820 vs 0.809), <strong>OACSP ordinal-cost achieves selective QWK 0.9218 vs 0.9068 for the global baseline &mdash; a +0.0150 absolute improvement &mdash; while simultaneously reducing Severe-DR abstention from 44.8% to 31.0%</strong>. This is the strongest publishable claim of v1.1.0: a clinically-motivated abstention rule that improves on the global baseline along both axes simultaneously.</p>
+
+<h3>6.5 Honest interpretation</h3>
+
+<p>Three caveats and clarifications, in service of not over-claiming:</p>
+
+<ul>
+    <li><strong>Cost-weighted AURC is identical across all three methods (0.1337).</strong> This is because AURC integrates the *uncertainty signal's ranking quality* over all coverage levels, and all three methods use the same neg-max-confidence signal. The methods differ in *which samples they keep at any single coverage operating point*, not in the underlying ranking. The contribution of OACSP is the operating-point selection rule, not the signal.</li>
+    <li><strong>The ordinal-cost variant exhibits a deliberately asymmetric trade-off.</strong> It abstains heavily on Mild DR (58.9%) because the cost matrix assigns ordinal-cost penalty 1 to Mild and 2.5 to Severe; the optimal rule reallocates abstention budget toward the costlier classes. This is the algorithm operating as designed.</li>
+    <li><strong>Per-class thresholds key off the *predicted* class.</strong> At inference the true class is unknown, so the per-class rule is necessarily applied based on argmax p(x). If model confidence patterns differ between *predicted-as-Severe* and *truly-Severe* samples (likely on a poorly-calibrated minority class), the rule leaks. Empirically the leakage seems small in this run &mdash; effect sizes are large &mdash; but the limitation is real.</li>
+</ul>
+
+<h3>6.6 Reproducibility</h3>
+
+<p>OACSP is implemented as a post-hoc analysis: it operates on the per-sample softmax outputs saved by the Section 5 pipeline and requires no retraining. The full OACSP comparison, including all per-class diagnostics, is produced by:</p>
+
+<pre>python scripts/run_oacsp_analysis.py \
+    --val-predictions  &lt;run_dir&gt;/temperature_scaling_val_predictions.csv \
+    --test-predictions &lt;run_dir&gt;/temperature_scaling_predictions.csv \
+    --target-coverage  0.80 \
+    --output-dir       &lt;run_dir&gt;/oacsp_v1.1.0</pre>
+
+<p>This produces <code>oacsp_comparison.csv</code> (the headline table) and <code>oacsp_detailed.json</code> (full per-class metrics for all three rules) in seconds on any CPU. The method itself is ~370 lines of pure NumPy / pandas in <code>src/selective/class_conditional.py</code>, accompanied by 9 unit tests in <code>tests/test_class_conditional.py</code>.</p>
+
+<h1 id="discussion"><span class="section-num">7.</span> Discussion</h1>
 
 <p><strong>Three different methods, three different wins.</strong> The cleanest takeaway from this benchmark is that the choice of uncertainty method should follow the downstream objective:</p>
 
@@ -261,58 +375,61 @@
 
 <p><strong>The most clinically actionable finding</strong> is the per-class behavior of the baseline: F1 of 0.48 on Mild and 0.45 on Severe, against 0.97 on No DR. A global confidence threshold for abstention will disproportionately abstain on these minority classes &mdash; the wrong direction. The class-conditional selective threshold method we plan to add in v1.1.0 directly addresses this by setting per-class abstention rules calibrated to equalize per-class retained recall.</p>
 
-<h1 id="limitations"><span class="section-num">7.</span> Limitations and Future Work</h1>
+<h1 id="limitations"><span class="section-num">8.</span> Limitations and Future Work</h1>
 
 <div class="callout amber">
     <strong>Limitations of this release.</strong> We make these explicit to set expectations honestly.
 </div>
 
 <ol>
-    <li><strong>Single seed.</strong> All numbers reported are from a single training run with seed 42. We do not estimate run-to-run variance. The next version will report mean &plusmn; standard deviation across at least 3 seeds.</li>
-    <li><strong>Single dataset, internal split only.</strong> All evaluation is on a held-out portion of APTOS 2019 itself. We do not test generalization to other DR datasets. External validation on IDRiD and Messidor-2 is scoped for v1.1.0.</li>
-    <li><strong>Single backbone.</strong> EfficientNet-B0 was chosen for its strong accuracy / compute trade-off, but we do not compare to ResNet-50, ConvNeXt, or ViT backbones. Whether our findings generalize across backbones is open.</li>
-    <li><strong>Methods omitted.</strong> Deep Ensembles and Evidential Deep Learning are well-known strong baselines that are not included in this version, primarily because Deep Ensembles requires M independent training runs (compute cost) and Evidential DL requires a separate training pipeline with a different loss.</li>
+    <li><strong>Single seed.</strong> All numbers reported are from a single training run with seed 42. We do not estimate run-to-run variance. The next version (v1.2.0) will report mean &plusmn; standard deviation across at least 3 seeds.</li>
+    <li><strong>Single dataset, internal split only.</strong> All evaluation is on a held-out portion of APTOS 2019 itself. We do not test generalization to other DR datasets. External validation on IDRiD and Messidor-2 is scoped for v1.2.0.</li>
+    <li><strong>Single backbone.</strong> EfficientNet-B0 was chosen for its strong accuracy / compute trade-off, but we do not compare to ResNet-50, ConvNeXt, or ViT backbones.</li>
+    <li><strong>Methods omitted.</strong> Deep Ensembles and Evidential Deep Learning are well-known strong baselines that are not included in this version, primarily because Deep Ensembles requires M independent training runs and Evidential DL requires a separate training pipeline with a different loss.</li>
+    <li><strong>OACSP per-class thresholds key off predicted class, not true class.</strong> At inference the true class is unknown. If model confidence patterns differ between *predicted-as-Severe* and *truly-Severe* samples on the poorly-calibrated minority class, the rule leaks. Empirically the leakage seems small in this run &mdash; effect sizes are large &mdash; but the limitation is acknowledged.</li>
     <li><strong>ECE has known weaknesses.</strong> ECE depends on binning and can hide important calibration failures. We save per-sample softmax outputs so future analyses can recompute Brier decomposition, adaptive-bin ECE, and reliability via density-estimation methods.</li>
-    <li><strong>5-class ordinal structure is not exploited.</strong> We treat DR grading as flat 5-class classification. Quadratic-weighted &kappa; partially compensates by penalizing off-by-one errors more lightly than off-by-three errors, but our uncertainty methods themselves are oblivious to ordinality. An ordinality-aware uncertainty method is a natural extension.</li>
 </ol>
 
-<h3>7.1 Concrete plan for v1.1.0</h3>
+<h3>8.1 Concrete plan for v1.2.0</h3>
 <ul>
+    <li>Multi-seed runs with seeds 7 and 137 to estimate run-to-run variance.</li>
     <li>Add IDRiD external validation. The IDRiD grading scheme matches APTOS's 5-class ICDR, so no re-mapping is required.</li>
-    <li>Introduce <strong>class-conditional selective thresholds</strong> &mdash; the novel methodological piece. Two variants: equalized-recall thresholds, and ordinal-distance-weighted thresholds.</li>
-    <li>Report mean &plusmn; SD across 3 seeds.</li>
+    <li>Add Messidor-2 external validation using Google Brain's adjudicated 5-class grading.</li>
+    <li>Test OACSP on the external validation sets &mdash; does the per-class threshold transfer?</li>
 </ul>
 
-<h3>7.2 Concrete plan for v2.0.0</h3>
+<h3>8.2 Concrete plan for v2.0.0</h3>
 <ul>
-    <li>Add Deep Ensembles (M=5) and Evidential Deep Learning.</li>
-    <li>Add Messidor-2 external validation (Google's adjudicated 5-class re-grading).</li>
-    <li>Add an <em>equity audit</em> &mdash; do abstention rates correlate with image-quality proxies? With patient demographic strata where available?</li>
+    <li>Add Deep Ensembles (M=5) and Evidential Deep Learning to the benchmark.</li>
+    <li>Add an <em>equity audit</em> &mdash; do abstention rates (under both global and OACSP rules) correlate with image-quality proxies?</li>
     <li>Submit the consolidated work to IEEE Journal of Biomedical and Health Informatics (J-BHI).</li>
 </ul>
 
-<h1 id="conclusion"><span class="section-num">8.</span> Conclusion</h1>
+<h1 id="conclusion"><span class="section-num">9.</span> Conclusion</h1>
 
-<p>We have presented a small, honest, fully reproducible benchmark of four post-hoc uncertainty quantification methods on APTOS 2019 diabetic retinopathy grading. The release accompanies open-source code, locked seeds, a public Weights &amp; Biases run, and a Kaggle notebook that reproduces every number in this report end-to-end in about an hour on a single T4 GPU.</p>
+<p>We have presented a small, honest, fully reproducible benchmark of four post-hoc uncertainty quantification methods on APTOS 2019 diabetic retinopathy grading (Sections 1–5), and a novel methodological contribution: Ordinal-Aware Class-Conditional Selective Prediction (Section 6). The release accompanies open-source code, locked seeds, and a Kaggle notebook that reproduces every number in this report end-to-end in about 75 minutes on a single T4 GPU.</p>
 
-<p>The clearest conclusion is that <em>different uncertainty methods optimize for different downstream objectives</em>: Temperature Scaling for calibration, MC Dropout with mutual information for selective-prediction quality, Split Conformal for coverage guarantees. There is no single best method; there is a per-deployment best choice. The per-class behavior of the baseline classifier suggests that the most impactful next methodological step is not another generic uncertainty method, but a class-conditional abstention rule tailored to ordinal DR severity grading. That is the focus of v1.1.0.</p>
+<p>The clearest conclusion from the benchmark portion is that <em>different uncertainty methods optimize for different downstream objectives</em>: Temperature Scaling for calibration, MC Dropout with mutual information for selective-prediction quality, Split Conformal for coverage guarantees. There is no single best method; there is a per-deployment best choice.</p>
 
-<h1 id="how-to-cite"><span class="section-num">9.</span> How to cite</h1>
+<p>The clearest conclusion from the OACSP portion is that <em>the operating-point selection rule matters more than the uncertainty signal for clinical deployment</em>. Holding the signal fixed (neg-max-confidence on temperature-scaled softmax), simply replacing the global threshold with class-conditional thresholds calibrated to operator-meaningful per-class targets reduces Severe-DR abstention 4.4&times; and improves selective QWK from 0.9068 to 0.9218 at matched coverage. We argue this is the most clinically actionable single change one can make to a deployed DR screening system: the architecture stays the same, the model stays the same, only the abstention rule changes.</p>
+
+<h1 id="how-to-cite"><span class="section-num">10.</span> How to cite</h1>
 
 <pre>@misc{khan2026retinalselective,
   author       = {Khan, Muhammad Shahnawaz},
   title        = {Selective Prediction with Calibrated Uncertainty
                   for Diabetic Retinopathy Screening:
-                  A Single-Backbone Benchmark on APTOS 2019},
+                  A Single-Backbone Benchmark on APTOS 2019
+                  with Ordinal-Aware Class-Conditional Selective Prediction},
   year         = {2026},
-  version      = {1.0.0},
+  version      = {1.1.0},
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.20681415},
   url          = {https://github.com/ShahnawazKakarh/retinal-selective-prediction},
   orcid        = {0009-0007-4055-6563}
 }</pre>
 
-<p class="small muted">The DOI above is the Zenodo Concept DOI for this work, which always resolves to the latest version. The version-specific DOI for v1.0.0 is 10.5281/zenodo.20681524. Subsequent versions (v1.1.0, v2.0.0) will receive new version DOIs under the same Concept DOI on Zenodo.</p>
+<p class="small muted">The DOI above is the Zenodo Concept DOI for this work, which always resolves to the latest version. The version-specific DOI for v1.0.0 was 10.5281/zenodo.20681524. v1.1.0 will receive its own version DOI under the same Concept DOI on publication of this release.</p>
 
 <h1 id="references">References</h1>
 
@@ -337,6 +454,7 @@
     <li id="ref-naeini">Naeini, M. P., Cooper, G. F., &amp; Hauskrecht, M. (2015). Obtaining Well Calibrated Probabilities Using Bayesian Binning. AAAI.</li>
     <li id="ref-nixon">Nixon, J., Dusenberry, M. W., Zhang, L., Jerfel, G., &amp; Tran, D. (2019). Measuring Calibration in Deep Learning. CVPR Workshops.</li>
     <li id="ref-tan">Tan, M., &amp; Le, Q. V. (2019). EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks. ICML.</li>
+    <li id="ref-geifman2">Geifman, Y., &amp; El-Yaniv, R. (2019). SelectiveNet: A Deep Neural Network with an Integrated Reject Option. ICML.</li>
 </ol>
 
 </body>

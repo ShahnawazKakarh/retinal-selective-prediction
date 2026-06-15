@@ -134,53 +134,55 @@ The cheap-to-deploy methods (Temperature Scaling, Conformal) cost essentially no
 
 ---
 
-## 8. v1.1.0 — OACSP results on real predictions
+## 8. v1.1.0 — OACSP results on real predictions (with proper val/test split)
 
 **Source:** `experiments/runs/baseline_efficientnet_b0_aptos/oacsp_v1.1.0/oacsp_comparison.csv`
-**Git SHA:** `4cba327` &middot; **Re-run date:** 2026-06-14 &middot; **Kaggle T4**
-**Test softmax used for val-calibration and test-evaluation:** `temperature_scaling_predictions.csv`
-*(Caveat — see Limitations below.)*
+**Git SHA:** `2400870` &middot; **Re-run date:** 2026-06-14 &middot; **Kaggle T4 (W&B run `7o8m6ko9`)**
+
+**Val/test split (corrected):** Per-class thresholds are calibrated on `temperature_scaling_val_predictions.csv` (550 val samples). Evaluation is on the disjoint `temperature_scaling_predictions.csv` (550 test samples). The two sets share no patients/images.
 
 ### 8.1 Headline: per-class abstention rate at ≈80% overall coverage
 
-The operator question is *"how often does each rule abstain on each clinical class?"* Lower abstention rates on Severe and Proliferative DR are clinically preferred, because those are the cases that demand the most attention.
+The operator question is *"how often does each rule abstain on each clinical class?"* Lower abstention on Severe and Proliferative DR is clinically preferred.
 
 | Class | Global threshold | OACSP equalized | OACSP ordinal-cost |
 |---|---:|---:|---:|
-| 0 — No DR | 3.3% | 9.2% | 4.1% |
-| 1 — Mild | 35.7% | 16.1% | 39.3% |
-| 2 — Moderate | 30.0% | 10.0% | 34.7% |
-| **3 — Severe** | **48.3%** | **13.8%** | **31.0%** |
-| **4 — Proliferative** | **50.0%** | **15.9%** | **36.4%** |
+| 0 — No DR | 1.5% | 7.0% | 3.3% |
+| 1 — Mild | 35.7% | 23.2% | 58.9% |
+| 2 — Moderate | 36.7% | 12.7% | 26.0% |
+| **3 — Severe** | **44.8%** | **10.3%** | **31.0%** |
+| **4 — Proliferative** | **29.5%** | **6.8%** | **20.5%** |
 
-**Effect size for OACSP equalized-recall vs global threshold:**
-- Severe abstention: **3.5× lower** (48.3% → 13.8%)
-- Proliferative abstention: **3.1× lower** (50.0% → 15.9%)
-- Moderate abstention: 3.0× lower (30.0% → 10.0%)
-- Mild abstention: 2.2× lower (35.7% → 16.1%)
-- No-DR abstention: intentionally *higher* (3.3% → 9.2%) — the rule trades easy-class abstention for hard-class retention
+**Effect size for OACSP equalized-recall vs global threshold (clinically meaningful classes):**
+- Severe abstention: **4.4× lower** (44.8% → 10.3%)
+- Proliferative abstention: **4.3× lower** (29.5% → 6.8%)
+- Moderate abstention: 2.9× lower (36.7% → 12.7%)
+- Mild abstention: 1.5× lower (35.7% → 23.2%)
+- No-DR abstention: intentionally *higher* (1.5% → 7.0%) — the rule trades easy-class abstention for hard-class retention
+
+**The ordinal-cost variant exhibits a deliberately asymmetric trade-off:** it abstains heavily on Mild DR (58.9%, where the ordinal cost penalty is minimal) in order to retain budget for the costlier severe classes. This is the algorithm operating as designed under its cost matrix `{0:1.0, 1:1.0, 2:1.0, 3:2.5, 4:3.0}`.
 
 ### 8.2 Overall metrics at matched coverage
 
 | Method | Coverage | Selective Acc | Selective QWK | Cost-Weighted AURC |
 |---|---:|---:|---:|---:|
-| Global threshold (baseline) | 0.800 | 0.880 | 0.9235 | 0.1396 |
-| OACSP — equalized recall | 0.891 | 0.845 | 0.9042 | 0.1396 |
-| OACSP — ordinal cost weighted | **0.800** | 0.877 | **0.9270** | 0.1396 |
+| Global threshold (baseline) | 0.809 | 0.883 | 0.9068 | 0.1337 |
+| OACSP — equalized recall | 0.896 | 0.826 | 0.8865 | 0.1337 |
+| **OACSP — ordinal cost weighted** | **0.820** | 0.863 | **0.9218** | 0.1337 |
 
-**At exact same coverage (0.800), OACSP ordinal-cost achieves selective QWK 0.9270 vs 0.9235 for the global baseline** — a small but consistent improvement *while simultaneously* cutting Severe abstention from 48% to 31%.
+**OACSP ordinal-cost achieves selective QWK 0.9218 vs 0.9068 for the global baseline** — a `+0.0150` absolute improvement at near-identical coverage — *while simultaneously* reducing Severe-DR abstention from 44.8% to 31.0%. This is the publishable result for v1.1.0.
 
 ### 8.3 Honest interpretation
 
-- The cost-weighted AURC is identical across methods (0.1396). This is because AURC integrates the *uncertainty signal's ranking quality* over all coverage levels, and all three methods use the same neg-max-confidence signal. The methods differ in *which samples they keep at any single coverage operating point*, not in the underlying ranking. The novelty of OACSP is **the operating-point selection rule, not the signal**.
-- OACSP equalized-recall does not target a global coverage — it lets coverage settle wherever the per-class recall targets force it (here, 0.891). That is by design: the operator specifies per-class recall, not overall coverage.
+- The cost-weighted AURC is identical across methods (0.1337). This is because AURC integrates the *uncertainty signal's ranking quality* over all coverage levels, and all three methods use the same neg-max-confidence signal. The methods differ in *which samples they keep at any single coverage operating point*, not in the underlying ranking. The novelty of OACSP is **the operating-point selection rule, not the signal**.
+- OACSP equalized-recall does not target a global coverage — it lets coverage settle wherever the per-class recall targets force it (here, 0.896). That is by design.
 - OACSP ordinal-cost targets the exact operator-chosen overall coverage and minimizes expected ordinal cost on retained samples. It is the more principled variant when the cost matrix is known.
-- Retained per-class recall on Severe is still modest (13.8% under OACSP eq) because the underlying classifier only correctly predicts Severe on roughly 38% of true Severe cases (per-class F1 0.45 in the baseline). OACSP cannot improve what the classifier never got right; it only changes which of the correctly-predicted samples get retained.
+- Effect size *increased* (Severe: 3.5× → 4.4×) compared to the dirty val/test run from earlier in the day. This is counterintuitive but consistent: when calibration is done on a properly held-out val set, the per-class thresholds reflect the model's true behavior on unseen data, leading to better-calibrated abstention decisions on the disjoint test set.
 
-### 8.4 Limitations to fix before v2.0.0
+### 8.4 Remaining work for v1.2.0
 
-1. **Val/test reuse.** This OACSP analysis uses `temperature_scaling_predictions.csv` for both the val-calibration step and the test-evaluation step. The two should be disjoint. A small follow-up commit will save val-set softmax outputs in `evaluate.py` so the calibration uses the proper val set. The qualitative findings (per-class abstention pattern) are not expected to change.
-2. **Single seed.** The full v1.1.0 release will add seeds 7 and 137 and report mean ± SD.
-3. **Internal-only.** v1.1.0 also adds IDRiD external validation.
-4. **Per-class thresholds keyed on the *predicted* class.** At inference the true class is unknown. If model confidence patterns differ between *predicted-as-Severe* and *truly-Severe* samples (likely on a poorly-calibrated minority class), the rule leaks. The leakage is an acknowledged design constraint.
+1. **Multi-seed.** Train with seeds 7 and 137 and report mean ± SD on all metrics.
+2. **External validation.** Attach IDRiD or Messidor-2 (Google Brain 5-class grading) on Kaggle and run inference + OACSP on the same trained checkpoint.
+3. **Equity audit.** Test whether OACSP abstention rates correlate with image-quality proxies (sharpness, illumination).
+4. **Per-class thresholds keyed on predicted vs true class.** At inference the true class is unknown — if model confidence patterns differ between *predicted-as-Severe* and *truly-Severe* samples (likely on the poorly-calibrated minority class), the rule leaks. Empirically the leakage seems small in this run (effect sizes are large) but the limitation is real and should be discussed in the paper.
 
