@@ -1,5 +1,5 @@
 /* ============================================================
-   Technical Report — Clean Academic Style
+   Technical Report — Clean Academic Style + RESEARCH ARTICLE cover
    Black on white, serif body, no decoration.
    ============================================================ */
 
@@ -343,3 +343,130 @@ hr {
 .cover-stats, .stat { display: none; }
 .cover-meta { display: none; }
 .cover-footer { display: none; }
+
+/* ============================================================
+   RESEARCH ARTICLE cover (v1.2.0)
+   Matches the journal-style cover used in the author's other works.
+   ============================================================ */
+
+.cover.research-article {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100%;
+    padding: 0 25mm;
+    page-break-after: always;
+}
+
+.ra-eyebrow {
+    font-family: "Inter", sans-serif;
+    font-size: 9.5pt;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 18mm;
+}
+
+.ra-title {
+    font-family: "Source Serif 4", "Source Serif Pro", Georgia, serif;
+    font-size: 26pt;
+    font-weight: 600;
+    line-height: 1.22;
+    color: #111827;
+    margin: 0 0 8mm 0;
+    max-width: 145mm;
+}
+
+.ra-subtitle {
+    font-family: "Source Serif 4", "Source Serif Pro", Georgia, serif;
+    font-size: 13pt;
+    font-style: italic;
+    color: #374151;
+    margin: 0 0 12mm 0;
+    max-width: 140mm;
+    line-height: 1.4;
+}
+
+.ra-rule {
+    border: none;
+    border-top: 0.4pt solid #9ca3af;
+    width: 36mm;
+    margin: 4mm auto 10mm auto;
+}
+
+.ra-author {
+    font-family: "Inter", sans-serif;
+    font-size: 14pt;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 3mm;
+}
+
+.ra-author-meta {
+    font-family: "Inter", sans-serif;
+    font-size: 9.5pt;
+    color: #4b5563;
+    margin-bottom: 14mm;
+    letter-spacing: 0.01em;
+}
+
+.ra-date {
+    font-family: "Inter", sans-serif;
+    font-size: 10pt;
+    color: #374151;
+    margin-bottom: 8mm;
+    letter-spacing: 0.02em;
+}
+
+.ra-footer {
+    font-family: "Inter", sans-serif;
+    font-size: 8.5pt;
+    color: #4b5563;
+    line-height: 1.6;
+    margin-top: 4mm;
+}
+
+.ra-footer strong {
+    color: #111827;
+    font-weight: 600;
+}
+
+/* ============================================================
+   Figures (v1.2.0)
+   ============================================================ */
+
+figure.fig-block {
+    margin: 5mm 0 7mm 0;
+    page-break-inside: avoid;
+    text-align: center;
+}
+
+figure.fig-block img {
+    max-width: 100%;
+    height: auto;
+    border: 0.4pt solid #e5e7eb;
+    padding: 2mm;
+    background: #fff;
+}
+
+figure.fig-block.fig-wide img {
+    max-width: 100%;
+}
+
+figure.fig-block figcaption {
+    font-family: "Source Serif 4", "Source Serif Pro", Georgia, serif;
+    font-size: 9pt;
+    line-height: 1.45;
+    color: #374151;
+    margin-top: 3mm;
+    text-align: justify;
+    padding: 0 4mm;
+}
+
+figure.fig-block figcaption strong {
+    color: #111827;
+    font-weight: 600;
+}

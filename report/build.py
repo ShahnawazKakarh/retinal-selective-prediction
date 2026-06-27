@@ -16,7 +16,7 @@ REPORT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = REPORT_DIR.parent
 HTML_IN = REPORT_DIR / "report.html"
 CSS_IN = REPORT_DIR / "style.css"
-PDF_OUT = REPORT_DIR / "retinal-selective-prediction-v1.1.0.pdf"
+PDF_OUT = REPORT_DIR / "retinal-selective-prediction-v1.2.0.pdf"
 
 
 def main() -> int:

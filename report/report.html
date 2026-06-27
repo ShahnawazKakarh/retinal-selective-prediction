@@ -7,26 +7,28 @@
 <body>
 
 <!-- =============================================================
-     COVER (page 1 only) — clean academic title page
+     COVER (page 1 only) — RESEARCH ARTICLE journal style
+     Matches the cover convention used across the author's other works.
      ============================================================= -->
-<section class="cover">
-    <div class="cover-eyebrow">Technical Report &middot; Version 1.1.0</div>
+<section class="cover research-article">
+    <div class="ra-eyebrow">RESEARCH ARTICLE</div>
 
-    <h1 class="cover-title">Selective Prediction with Calibrated Uncertainty for Diabetic Retinopathy Screening</h1>
+    <h1 class="ra-title">Ordinal-Aware Class-Conditional Selective Prediction for Diabetic Retinopathy Screening</h1>
 
-    <p class="cover-subtitle">A single-backbone benchmark of four post-hoc uncertainty methods on APTOS 2019, extended with Ordinal-Aware Class-Conditional Selective Prediction (OACSP)</p>
+    <p class="ra-subtitle"><em>A clinically calibrated, per-class abstention rule for ordinal DR severity grading on APTOS 2019</em></p>
 
-    <hr class="cover-divider">
+    <hr class="ra-rule">
 
-    <div class="cover-author">Muhammad Shahnawaz Khan</div>
-    <div class="cover-author-meta">Independent Researcher &middot; ORCID 0009-0007-4055-6563</div>
+    <div class="ra-author">Muhammad Shahnawaz Khan</div>
+    <div class="ra-author-meta">Independent Researcher &middot; Lahore, Pakistan &middot; ORCID 0009-0007-4055-6563</div>
 
-    <div class="cover-date">June 2026</div>
+    <div class="ra-date">June 2026 &middot; v1.2.0</div>
 
-    <div class="cover-bottom">
-        <span class="label">Source code:</span> github.com/ShahnawazKakarh/retinal-selective-prediction<br>
-        <span class="label">Reproducibility:</span> git SHA <span class="mono">2400870</span><br>
-        <span class="label">License:</span> MIT
+    <hr class="ra-rule">
+
+    <div class="ra-footer">
+        <div><strong>Code &amp; Data:</strong> github.com/ShahnawazKakarh/retinal-selective-prediction</div>
+        <div><strong>Licence:</strong> MIT &middot; <strong>DOI:</strong> 10.5281/zenodo.20681415 (concept)</div>
     </div>
 </section>
 
@@ -79,6 +81,11 @@
 
 <h3>3.2 Splits</h3>
 <p>The 3,662 labeled APTOS training images are split into train / val / test = 70 / 15 / 15 with a stratified shuffle. The split is fully deterministic from <code>GLOBAL_SEED=42</code>. The same splits are used for all uncertainty methods.</p>
+
+<figure class="fig-block">
+    <img src="figures/fig01_class_distribution.png" alt="Pie chart of APTOS 2019 class distribution">
+    <figcaption><strong>Figure 1.</strong> APTOS 2019 training set class distribution (N=2,562 after stratified split). The dataset exhibits severe ordinal imbalance: No-DR dominates with 49% of training images, while Severe (5.3%) and Proliferative (8.1%) DR are heavily underrepresented. This imbalance is the central motivation for OACSP — a global confidence threshold for abstention behaves badly on the minority classes that are clinically the most critical.</figcaption>
+</figure>
 
 <h3>3.3 Uncertainty methods</h3>
 
@@ -190,6 +197,11 @@
 
 <p>The headline finding is that <strong>no single method dominates on all metrics</strong>. Temperature Scaling wins on calibration. MC Dropout wins on AURC. Conformal is the only method providing a finite-sample coverage guarantee. The choice between them depends on the downstream use case.</p>
 
+<figure class="fig-block">
+    <img src="figures/fig03_aurc_comparison.png" alt="Bar chart of AURC and Excess-AURC across the four uncertainty methods">
+    <figcaption><strong>Figure 2.</strong> Risk-coverage AURC across uncertainty methods. Lower AURC = better. MC Dropout (BALD mutual information) and Temperature Scaling achieve the lowest excess-AURC (0.0289 vs 0.0293), substantially below plain softmax (0.0598) and Split Conformal set-size (0.0830). The conformal set-size signal performs poorly as a continuous uncertainty ranking even though it provides strong coverage guarantees as a categorical abstention rule — these are different objectives.</figcaption>
+</figure>
+
 <h3>5.3 Temperature Scaling</h3>
 
 <p>The optimal temperature on validation logits is T = 2.247. Since T &gt; 1, the model is over-confident (softer the softmax). Calibration metrics:</p>
@@ -298,6 +310,11 @@
 
 <p>OACSP occupies a quadrant nobody has previously occupied. The novelty is narrow but real and clinically motivated.</p>
 
+<figure class="fig-block">
+    <img src="figures/fig06_oacsp_novelty_quadrant.png" alt="2x2 quadrant chart showing OACSP's novel position relative to prior work">
+    <figcaption><strong>Figure 3.</strong> OACSP novelty positioning vs. prior work. The two axes are *per-class abstention thresholds* (horizontal) and *ordinal-distance-weighted cost* (vertical). Prior selective-prediction methods cluster in the lower-left quadrant (global threshold, flat 0/1 loss). OACSP occupies the upper-right quadrant alone: both per-class and ordinal-cost aware.</figcaption>
+</figure>
+
 <h3>6.4 Results on APTOS 2019</h3>
 
 <p>Per-class thresholds are calibrated on the temperature-scaling-calibrated val predictions (550 samples). Evaluation is on the disjoint test set (550 samples). All numbers below are from git SHA <code>2400870</code>, Kaggle T4 GPU, single seed 42.</p>
@@ -324,6 +341,11 @@
 
 <p><strong>OACSP equalized-recall reduces Severe-DR abstention by a factor of 4.4&times;</strong> (44.8% &rarr; 10.3%) and Proliferative-DR abstention by 4.3&times; (29.5% &rarr; 6.8%) compared to the global threshold baseline. The trade-off is intentionally higher abstention on the easy No-DR class (1.5% &rarr; 7.0%) &mdash; the rule reallocates abstention budget from clinically inconsequential cases to clinically dangerous ones.</p>
 
+<figure class="fig-block fig-wide">
+    <img src="figures/fig04_oacsp_per_class_abstention.png" alt="Bar chart of per-class abstention rates for global threshold vs OACSP variants">
+    <figcaption><strong>Figure 4.</strong> Headline OACSP result. Per-class abstention rate at &asymp;80% overall coverage on APTOS 2019. The shaded region marks the clinically critical Severe (3) and Proliferative (4) classes, where missed cases can blind the patient. OACSP equalized-recall reduces abstention on these classes by 4.4&times; and 4.3&times; respectively, by reallocating abstention budget from the clinically inconsequential No-DR (0) and Mild (1) classes.</figcaption>
+</figure>
+
 <h4>6.4.2 Overall metrics at matched coverage</h4>
 
 <table class="keep-together">
@@ -338,6 +360,11 @@
 </table>
 
 <p>At near-identical coverage (0.820 vs 0.809), <strong>OACSP ordinal-cost achieves selective QWK 0.9218 vs 0.9068 for the global baseline &mdash; a +0.0150 absolute improvement &mdash; while simultaneously reducing Severe-DR abstention from 44.8% to 31.0%</strong>. This is the strongest publishable claim of v1.1.0: a clinically-motivated abstention rule that improves on the global baseline along both axes simultaneously.</p>
+
+<figure class="fig-block">
+    <img src="figures/fig05_oacsp_qwk_vs_coverage.png" alt="Selective QWK vs coverage scatter for three abstention rules">
+    <figcaption><strong>Figure 5.</strong> Selective quadratic-weighted &kappa; vs. coverage for the three abstention rules. OACSP ordinal-cost (navy diamond) Pareto-dominates the global threshold baseline (gray circle): at marginally higher coverage (0.820 vs 0.809), it achieves a +0.0150 absolute improvement in selective QWK while simultaneously cutting Severe-DR abstention by 31%. OACSP equalized-recall (red square) trades slightly lower QWK for substantially better per-class behavior on the clinically critical classes.</figcaption>
+</figure>
 
 <h3>6.5 Honest interpretation</h3>
 
