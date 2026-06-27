@@ -17,7 +17,10 @@
 
 Deep learning models for diabetic retinopathy (DR) screening routinely report 85–95% accuracy on standard benchmarks. The number that *doesn't* appear in those papers is the one a clinician actually needs: **what fraction of confidently-wrong predictions slip through, and how do we catch them?**
 
-This repository benchmarks five families of **uncertainty quantification** methods on the same retinal-screening backbone and same fixed splits, then evaluates each through the lens of **selective prediction** — the right to abstain and refer hard cases to a human.
+This repository contributes two pieces:
+
+1. **A clean reproducible benchmark** of five families of uncertainty quantification methods on the same backbone and same fixed splits, evaluated through the lens of selective prediction (v1.0.0).
+2. **OACSP — Ordinal-Aware Class-Conditional Selective Prediction** — a novel post-hoc abstention rule that replaces the standard global confidence threshold with per-class thresholds calibrated either to operator-specified per-class target recall or to minimize ordinal-distance-weighted expected cost (v1.1.0).
 
 | Method | Family | What it estimates | Cost vs. baseline |
 |---|---|---|---|
@@ -27,6 +30,7 @@ This repository benchmarks five families of **uncertainty quantification** metho
 | **Temperature Scaling** | Post-hoc calibration | Sharpens / softens softmax to match accuracy | ~0× (1-param fit) |
 | **Evidential Deep Learning** | Subjective logic | Dirichlet over class probs, explicit uncertainty | 1× (custom loss) |
 | **Conformal Prediction** | Distribution-free | Calibrated prediction sets with coverage guarantee | ~0× (post-hoc) |
+| **OACSP** *(this work, v1.1.0)* | Selective rule | Per-class abstention thresholds with ordinal cost | 0× (post-hoc, ~370 LOC) |
 
 > **Why this matters clinically:** screening tools live or die on **false negatives**. A 95% accurate model that confidently mis-classifies the 5% of severe-DR cases it misses is *worse* than an 85% accurate model that abstains on its hardest 15% and surfaces them for human review. Selective prediction reframes "how accurate is the model" as **"how accurate is the model on the cases it chose to answer."**
 
@@ -34,9 +38,11 @@ This repository benchmarks five families of **uncertainty quantification** metho
 
 ## 📈 Results
 
-> ✅ **Internal test results live** (`b196c59`, 2026-06-12). See [`results/results.md`](results/results.md) for full breakdown and reproducibility notes. External validation on Messidor-2 / IDRiD coming next.
+> ✅ **v1.1.0 released** (`2400870`, 2026-06-14). See [`results/results.md`](results/results.md) for the full breakdown including §8 OACSP results. External validation on IDRiD + Messidor-2 coming next (v1.2.0).
 
 ### Internal test set — APTOS 2019 (held-out 15%, stratified)
+
+**Baseline + post-hoc uncertainty methods (v1.0.0 numbers):**
 
 | Method | Acc ↑ | QWK ↑ | ECE ↓ | NLL ↓ | AURC ↓ | Excess-AURC ↓ | Sel. Acc @ 80% coverage ↑ |
 |---|---|---|---|---|---|---|---|
@@ -49,24 +55,35 @@ This repository benchmarks five families of **uncertainty quantification** metho
 
 QWK = quadratic-weighted Cohen's κ (APTOS official metric). ECE = Expected Calibration Error (15 bins). AURC = Area Under Risk–Coverage curve. Excess-AURC isolates the uncertainty signal from baseline accuracy.
 
-**Three different methods, three different wins.** Temperature Scaling cuts ECE by **62%** (0.146 → 0.055) with one scalar. MC Dropout with mutual information has the lowest AURC, meaning its uncertainty signal best identifies which predictions to abstain on. Conformal hits its 90% coverage target almost exactly (empirical 90.2%) with average set size 1.35.
+**Three different methods, three different wins.** Temperature Scaling cuts ECE by **62%** (0.146 → 0.055) with one scalar. MC Dropout with mutual information has the lowest AURC. Conformal hits its 90% coverage target almost exactly (empirical 90.2%) with average set size 1.35.
 
-### External validation — Messidor-2
+### OACSP — novel piece (v1.1.0 contribution)
+
+**Per-class abstention rate at ≈80% overall coverage** (calibrated on val, evaluated on disjoint test):
+
+| Class | Global threshold | OACSP equalized recall | OACSP ordinal cost |
+|---|---:|---:|---:|
+| 0 — No DR | 1.5% | 7.0% | 3.3% |
+| 1 — Mild | 35.7% | 23.2% | 58.9% |
+| 2 — Moderate | 36.7% | 12.7% | 26.0% |
+| **3 — Severe** | **44.8%** | **10.3%** | **31.0%** |
+| **4 — Proliferative** | **29.5%** | **6.8%** | **20.5%** |
+
+**Headline:** OACSP equalized-recall reduces **Severe-DR abstention by 4.4×** (44.8% → 10.3%) and **Proliferative-DR abstention by 4.3×** (29.5% → 6.8%) versus the standard global threshold. OACSP ordinal-cost-weighted achieves selective QWK **0.9218 vs. 0.9068** for the global baseline at near-identical coverage (0.820 vs. 0.809).
+
+The rule is post-hoc — no retraining — and operates on the saved softmax outputs. See [`docs/oacsp_method.md`](docs/oacsp_method.md) for the method writeup and the novelty quadrant table vs. prior work.
+
+### External validation — Messidor-2 *(v2.0.0)*
 
 | Method | Acc ↑ | QWK ↑ | ECE ↓ | AURC ↓ | Excess-AURC ↓ | Sel. Acc @ 80% coverage ↑ |
 |---|---|---|---|---|---|---|
-| Softmax | – | – | – | – | – | – |
-| Temperature Scaling | – | – | – | – | – | – |
-| MC Dropout | – | – | – | – | – | – |
-| Deep Ensembles | – | – | – | – | – | – |
-| Evidential DL | – | – | – | – | – | – |
-| Conformal | – | – | – | – | – | – |
+| (planned) | – | – | – | – | – | – |
 
-### External validation — IDRiD
+### External validation — IDRiD *(v1.2.0)*
 
 | Method | Acc ↑ | QWK ↑ | ECE ↓ | AURC ↓ | Excess-AURC ↓ |
 |---|---|---|---|---|---|
-| (same rows) | – | – | – | – | – |
+| (planned) | – | – | – | – | – |
 
 ### Comparison vs. published baselines
 
@@ -74,9 +91,9 @@ QWK = quadratic-weighted Cohen's κ (APTOS official metric). ECE = Expected Cali
 |---|---|---|---|---|
 | APTOS 2019 winner (kaggle, 2019) | Inception-ResNet v2 ensemble | APTOS (test) | 0.936 | TTA + 4× ensemble, no uncertainty / no abstention |
 | Krause et al. 2018 (Google) | Inception-v4 | Proprietary | – | Closed dataset; not directly comparable |
-| *(this work)* | EfficientNet-B0 + selective | APTOS (internal test) | – | Single-backbone for clean ablations |
+| *(this work, v1.1.0)* | EfficientNet-B0 + selective + OACSP | APTOS (internal test) | 0.865 baseline, 0.9218 selective QWK with OACSP at 82% coverage | Single-backbone for clean ablations |
 
-> The point of this work is **not** to chase the absolute best QWK number — that race is already over. The contribution is the **selective-prediction comparison on a fixed backbone**, which the literature has not done cleanly.
+> The point of this work is **not** to chase the absolute best QWK number — that race is already over. The contribution is the **selective-prediction comparison on a fixed backbone**, plus the OACSP novel abstention rule (v1.1.0).
 
 ---
 
@@ -254,16 +271,22 @@ A few design decisions called out so they don't surprise future-me or reviewers:
 - [x] Deterministic evaluation (ECE, reliability diagram, confusion matrix)
 - [x] Kaggle notebook for baseline training
 - [x] MC Dropout uncertainty + risk–coverage / AURC selective analysis
-- [x] **Baseline trained — val QWK 0.889, test QWK 0.865** ([W&B run](https://wandb.ai/qapulsebysk/retinal-selective-prediction))
+- [x] **Baseline trained — val QWK 0.889, test QWK 0.865**
 - [x] **Temperature Scaling — ECE 0.146 → 0.055**
 - [x] **MC Dropout (T=30) — best AURC across all methods**
 - [x] **Conformal Prediction (Split + APS) — 90.2% empirical coverage @ α=0.10**
-- [ ] Deep Ensembles (M=5 independent seeds)
-- [ ] Evidential Deep Learning (Dirichlet head + custom loss)
-- [ ] External validation harness — Messidor-2 + IDRiD
-- [ ] **Novel piece:** class-conditional selective thresholds *(or)* distribution-shift-aware selective prediction
-- [ ] Paper draft — target IEEE J-BHI submission Oct/Nov 2026
-- [ ] Blog writeup on [skakarh.com](https://www.skakarh.com/blog/)
+- [x] **v1.0.0 released to Zenodo with DOI** (June 13, 2026)
+- [x] **OACSP — Ordinal-Aware Class-Conditional Selective Prediction (novel)**
+- [x] **Proper val/test split fix for OACSP calibration**
+- [x] **v1.1.0 released to Zenodo with DOI** (June 14, 2026)
+- [ ] *v1.2.0:* Multi-seed runs (seeds 7, 137) for mean ± SD
+- [ ] *v1.2.0:* IDRiD external validation
+- [ ] *v1.2.0:* OACSP transfer test on IDRiD
+- [ ] *v2.0.0:* Deep Ensembles (M=5 independent seeds)
+- [ ] *v2.0.0:* Evidential Deep Learning (Dirichlet head + custom loss)
+- [ ] *v2.0.0:* Messidor-2 external validation
+- [ ] *v2.0.0:* Equity audit — do abstention rates correlate with image-quality proxies?
+- [ ] Paper draft — target IEEE J-BHI submission late 2026
 
 ---
 
@@ -271,13 +294,18 @@ A few design decisions called out so they don't surprise future-me or reviewers:
 
 This project is published as **versioned Zenodo releases**, each with its own DOI. The Concept DOI on Zenodo resolves to the latest version; the version-specific DOI pins to an exact artifact. The same project also progresses toward an IEEE J-BHI submission for v2.0.0.
 
-| Version | Scope | Status |
-|---|---|---|
-| **v1.0.0** | Single-seed benchmark on APTOS 2019 (4 uncertainty methods) | 🟢 Released → Zenodo (this release) |
-| v1.1.0 | + Class-conditional selective thresholds (novel) + IDRiD external validation | 🟡 Planned |
-| v2.0.0 | + Deep Ensembles + Evidential DL + Messidor-2 + equity audit | 🔵 Target: IEEE J-BHI |
+| Version | Scope | Status | Version DOI |
+|---|---|---|---|
+| **v1.0.0** | Single-seed benchmark on APTOS 2019 (4 uncertainty methods) | 🟢 Released | [`10.5281/zenodo.20681524`](https://doi.org/10.5281/zenodo.20681524) |
+| **v1.1.0** | + OACSP (novel post-hoc abstention rule) + proper val/test split | 🟢 Released | [`10.5281/zenodo.20695855`](https://doi.org/10.5281/zenodo.20695855) |
+| v1.2.0 | + Multi-seed variance + IDRiD external validation + OACSP transfer test | 🟡 Planned |  |
+| v2.0.0 | + Deep Ensembles + Evidential DL + Messidor-2 + equity audit | 🔵 Target: IEEE J-BHI |  |
+
+**Concept DOI** (always resolves to the latest version): [`10.5281/zenodo.20681415`](https://doi.org/10.5281/zenodo.20681415)
 
 **Step-by-step Zenodo release & ORCID flow:** [`docs/zenodo_release.md`](docs/zenodo_release.md)
+**Kaggle reproducibility runbook:** [`docs/kaggle_setup.md`](docs/kaggle_setup.md)
+**OACSP method writeup:** [`docs/oacsp_method.md`](docs/oacsp_method.md)
 **Built technical report PDF source:** [`report/`](report/) (run `python report/build.py` to rebuild)
 **Machine-readable citation:** [`CITATION.cff`](CITATION.cff)
 
@@ -288,16 +316,17 @@ If you use this benchmark in your work, please cite it using the `CITATION.cff` 
   author    = {Khan, Muhammad Shahnawaz},
   title     = {Selective Prediction with Calibrated Uncertainty
                for Diabetic Retinopathy Screening:
-               A Single-Backbone Benchmark on APTOS 2019},
+               A Single-Backbone Benchmark on APTOS 2019
+               with Ordinal-Aware Class-Conditional Selective Prediction},
   year      = {2026},
-  version   = {1.0.0},
+  version   = {1.1.0},
   publisher = {Zenodo},
   doi       = {10.5281/zenodo.20681415},
   url       = {https://github.com/ShahnawazKakarh/retinal-selective-prediction}
 }
 ```
 
-The Zenodo Concept DOI `10.5281/zenodo.20681415` always resolves to the latest version. v1.0.0 specifically is at `10.5281/zenodo.20681524`.
+The Zenodo Concept DOI `10.5281/zenodo.20681415` always resolves to the latest version. v1.1.0 specifically is at `10.5281/zenodo.20695855`; v1.0.0 specifically is at `10.5281/zenodo.20681524`.
 
 ---
 
@@ -331,7 +360,7 @@ Bug reports, suggestions, and pull requests are welcome. Please read [`CONTRIBUT
 
 ## 📄 License
 
-MIT © [Shahnawaz Khan](https://github.com/ShahnawazKakarh)
+MIT © Muhammad Shahnawaz Khan
 
 ---
 

@@ -107,10 +107,35 @@ Each of these strengthens the paper but is *not* required for v1.0.0 or v1.1.0.
 
 ## 7. Version plan summary
 
-| Version | Scope | Novelty claim | DOI |
-|---|---|---|---|
-| **v1.0.0** | Single-seed benchmark of 4 uncertainty methods on APTOS 2019 | Reproducibility + head-to-head comparison only | Yes (Zenodo) |
-| v1.1.0 | + class-conditional thresholds (novel piece) + IDRiD external validation | Methodological: class-conditional ordinal-aware selective thresholds | Yes (Zenodo, new version DOI) |
-| v2.0.0 | + Deep Ensembles + Evidential DL + Messidor-2 + equity audit | Full benchmark + methodological + clinical contribution | J-BHI submission |
+| Version | Scope | Novelty claim | DOI | Status |
+|---|---|---|---|---|
+| **v1.0.0** | Single-seed benchmark of 4 uncertainty methods on APTOS 2019 | Reproducibility + head-to-head comparison only | `10.5281/zenodo.20681524` | ✅ Released 2026-06-13 |
+| **v1.1.0** | + OACSP (Ordinal-Aware Class-Conditional Selective Prediction) + proper val/test split | Methodological: class-conditional ordinal-aware abstention rule, occupies previously-empty quadrant in selective-prediction literature | `10.5281/zenodo.20695855` | ✅ Released 2026-06-14 |
+| v1.2.0 | + multi-seed variance (seeds 7, 137) + IDRiD external validation + OACSP transfer test + paper-quality figures + restyled "RESEARCH ARTICLE" PDF for SSRN | Empirical: cross-dataset generalization of both backbone and abstention rule | pending | 🟡 In progress |
+| v2.0.0 | + Deep Ensembles + Evidential DL + Messidor-2 + equity audit + image-quality stratified analysis | Full benchmark + methodological + clinical contribution; consolidated paper | pending | 🔵 Target: IEEE J-BHI |
 
-Each Zenodo version increments under the same Zenodo Concept DOI, so the ORCID entry shows the project as a single evolving artifact.
+Each Zenodo version increments under the same Zenodo Concept DOI (`10.5281/zenodo.20681415`), so the ORCID entry shows the project as a single evolving artifact.
+
+---
+
+## 8. v1.1.0 result snapshot (real numbers)
+
+The OACSP novel contribution was demonstrated on APTOS 2019 with the proper val/test split. Headline result at ~80% overall coverage:
+
+| Class | Global threshold abstention | OACSP equalized recall | Improvement |
+|---|---:|---:|---:|
+| 3 — Severe | 44.8% | 10.3% | **4.4× lower** |
+| 4 — Proliferative | 29.5% | 6.8% | **4.3× lower** |
+
+OACSP ordinal-cost-weighted variant achieves **selective QWK 0.9218 vs. 0.9068** for the global baseline at near-identical coverage. Full breakdown in `results/results.md` §8 and `docs/oacsp_method.md`.
+
+---
+
+## 9. v1.2.0 concrete deliverables (locked scope)
+
+1. **Multi-seed runs.** Re-train baseline with seeds 7 and 137 on Kaggle. Re-run all four uncertainty methods + OACSP on each. Report mean ± SD on every published metric.
+2. **IDRiD external validation.** Attach Kaggle dataset `mariaherrerot/idrid-dataset` (images + 5-class ICDR labels matching APTOS scheme). New module `src/data/idrid.py`, new script `scripts/run_external_validation.py`. Evaluate the APTOS-trained checkpoint zero-shot on IDRiD.
+3. **OACSP transfer test.** Apply OACSP per-class thresholds calibrated on APTOS val to IDRiD test set. Does the per-class threshold transfer? This is a stronger novelty claim than v1.1.0.
+4. **Paper-quality figures.** Bar charts of per-class abstention, risk-coverage curves, reliability diagrams, OACSP novelty quadrant. Produced by `scripts/generate_paper_figures.py` from saved JSON/CSV outputs, no GPU needed.
+5. **Restyled "RESEARCH ARTICLE" PDF.** Clean journal-style cover (RESEARCH ARTICLE eyebrow, big serif title, author block, date+version, code+licence footer). Suitable for SSRN upload.
+

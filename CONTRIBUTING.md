@@ -29,6 +29,33 @@ pre-commit run --all-files    # verify everything is clean before first commit
 pytest -q
 ```
 
+Current test suite covers the OACSP method (`tests/test_class_conditional.py`, 9 tests) plus any other unit tests under `tests/`. All tests are designed to run on CPU without the trained checkpoint — they use synthetic data with known structure.
+
+## Project versions
+
+This project uses semantic versioning aligned with Zenodo releases.
+
+| Version | Status | Scope |
+|---|---|---|
+| v1.0.0 | ✅ Released | Reproducible four-method benchmark on APTOS 2019 |
+| v1.1.0 | ✅ Released | + OACSP novel post-hoc abstention rule |
+| v1.2.0 | 🟡 In progress | + multi-seed variance + IDRiD external validation + paper figures |
+| v2.0.0 | 🔵 Planned | + Deep Ensembles + Evidential DL + Messidor-2 + IEEE J-BHI submission |
+
+If you are contributing a new feature, please target the next minor version's branch (currently `v1.2.0-*`). For bug fixes against a released version, target `master` and we'll cherry-pick.
+
+## Regenerating paper figures
+
+All publication figures are produced from saved JSON/CSV outputs — no GPU needed:
+
+```bash
+python scripts/generate_paper_figures.py \
+    --run-dir experiments/runs/baseline_efficientnet_b0_aptos \
+    --output-dir report/figures
+```
+
+Figures are saved at 300 DPI as PNG and committed under `report/figures/`. The matplotlib style (fonts, palette, axes) is defined in `setup_style()` at the top of the script.
+
 Tests must pass before a PR is merged. New code should ship with at least a smoke test under `tests/`. We do **not** require unit-test coverage of the training loop itself; we do require that data loaders, splits, and metrics are tested deterministically.
 
 ## Adding a new uncertainty method

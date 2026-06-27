@@ -146,6 +146,19 @@ Zenodo automatically files the new version under the **same Concept DOI**. Your 
 
 ---
 
+## Release log
+
+| Version | Date | Status | Version DOI | Notes |
+|---|---|---|---|---|
+| v1.0.0 | 2026-06-13 | ✅ Released | [`10.5281/zenodo.20681524`](https://doi.org/10.5281/zenodo.20681524) | First clean release with the four-method benchmark |
+| v1.1.0 | 2026-06-14 | ✅ Released | [`10.5281/zenodo.20695855`](https://doi.org/10.5281/zenodo.20695855) | Added OACSP novel methodology + val/test split fix |
+| v1.2.0 | TBD | 🟡 Planned | | Multi-seed variance + IDRiD external validation + OACSP transfer test |
+| v2.0.0 | TBD | 🔵 Planned | | Deep Ensembles + Evidential DL + Messidor-2 + equity audit, target IEEE J-BHI |
+
+**Concept DOI** (always resolves to latest): [`10.5281/zenodo.20681415`](https://doi.org/10.5281/zenodo.20681415)
+
+---
+
 ## What if I make a mistake on the released metadata?
 
 Zenodo allows editing metadata fields (title, description, keywords) after release without changing the DOI. The PDF file itself, however, is immutable once a DOI is minted &mdash; if you find a typo in the PDF, you'd publish a new minor version (e.g., v1.0.1) rather than mutating v1.0.0.
