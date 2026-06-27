@@ -69,6 +69,17 @@ lightning_logs/
 outputs/
 logs/
 
+# ---- Generated report artifacts ----
+# PDFs are regeneratable from report.html via `python report/build.py`.
+# Frozen versions live on Zenodo with DOIs and on GitHub Releases.
+report/*.pdf
+
+# Figures are regeneratable from saved JSON/CSV via
+# `python scripts/generate_paper_figures.py`. We commit them anyway so
+# that the GitHub README can render them without requiring users to run
+# the script. Comment the next line out if you prefer to gitignore them.
+#report/figures/*.png
+
 # ---- OS ----
 Thumbs.db
 .Spotlight-V100
