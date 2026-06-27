@@ -350,13 +350,19 @@ hr {
    ============================================================ */
 
 .cover.research-article {
+    /* Override .cover height/padding so flex centering works in print context.
+       Use min-height to fill the @page content area (A4 297mm minus 30+25mm
+       margins from @page :first => ~242mm content area). */
+    width: auto;
+    height: auto;
+    min-height: 240mm;
+    padding: 0;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    height: 100%;
-    padding: 0 25mm;
     page-break-after: always;
 }
 
