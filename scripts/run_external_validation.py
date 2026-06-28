@@ -83,7 +83,11 @@ def main() -> int:
     ).to(device)
     ckpt_path = args.run_dir / "best.pt"
     ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
-    state = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+    # Try multiple state-dict key names for compatibility
+    if isinstance(ckpt, dict):
+        state = ckpt.get("model_state") or ckpt.get("model") or ckpt.get("state_dict") or ckpt
+    else:
+        state = ckpt
     model.load_state_dict(state)
     print(f"Loaded checkpoint from {ckpt_path}")
 
