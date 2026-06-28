@@ -38,7 +38,7 @@ from torch.utils.data import DataLoader
 
 from src.data.idrid import build_idrid_test_dataset
 from src.data.transforms import build_eval_transform
-from src.models.backbone import build_model
+from src.models.backbone import RetinalClassifier
 from src.utils.config import load_yaml
 from src.evaluation.metrics import compute_test_metrics
 
@@ -74,10 +74,16 @@ def main() -> int:
 
     # --- Load model
     cfg = load_yaml(args.config)
-    model = build_model(cfg).to(device)
+    model = RetinalClassifier(
+        backbone=cfg.model.backbone,
+        num_classes=cfg.model.num_classes,
+        pretrained=False,  # we're loading our own weights below
+        dropout=cfg.model.dropout,
+    ).to(device)
     ckpt_path = args.run_dir / "best.pt"
     ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
-    model.load_state_dict(ckpt["model"])
+    state = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+    model.load_state_dict(state)
     print(f"Loaded checkpoint from {ckpt_path}")
 
     # --- Build IDRiD test loader
