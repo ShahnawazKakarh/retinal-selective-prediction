@@ -62,8 +62,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", type=Path, required=True,
                     help="APTOS run directory containing best.pt and saved val_predictions")
-    ap.add_argument("--idrid-root", type=Path, required=True,
-                    help="IDRiD root directory, e.g. /kaggle/input/idrid-dataset/B. Disease Grading")
+    ap.add_argument("--idrid-root", type=Path, required=False, default=None,
+                    help="IDRiD root dir. If omitted, auto-detects canonical or Kaggle-flat layout.")
     ap.add_argument("--output-dir", type=Path, required=True)
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--config", type=Path, default=Path("configs/baseline.yaml"))
