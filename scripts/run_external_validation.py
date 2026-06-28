@@ -39,8 +39,9 @@ from torch.utils.data import DataLoader
 from src.data.idrid import build_idrid_test_dataset
 from src.data.transforms import build_eval_transform
 from src.models.backbone import RetinalClassifier
-from src.utils.config import load_yaml
-from src.evaluation.metrics import compute_test_metrics
+from src.utils.config import load_config
+from src.evaluation.metrics import expected_calibration_error
+from sklearn.metrics import cohen_kappa_score, log_loss
 
 
 def predict(model: torch.nn.Module, loader: DataLoader, device: str) -> tuple[np.ndarray, np.ndarray, list[str]]:
@@ -73,7 +74,7 @@ def main() -> int:
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # --- Load model
-    cfg = load_yaml(args.config)
+    cfg = load_config(args.config)
     model = RetinalClassifier(
         backbone=cfg.model.backbone,
         num_classes=cfg.model.num_classes,
@@ -113,13 +114,20 @@ def main() -> int:
     pred_df.to_csv(args.output_dir / "predictions.csv", index=False)
     print(f"Wrote predictions.csv ({len(pred_df)} rows)")
 
-    # --- Compute test metrics
-    metrics = compute_test_metrics(
-        labels=labels, preds=preds, probs=probs, n_classes=probs.shape[1]
-    )
+    # --- Compute test metrics inline
+    accuracy = float((preds == labels).mean())
+    qwk = float(cohen_kappa_score(labels, preds, weights="quadratic"))
+    nll = float(log_loss(labels, probs, labels=list(range(probs.shape[1]))))
+    brier = float(((probs - np.eye(probs.shape[1])[labels]) ** 2).sum(axis=1).mean())
+    ece = float(expected_calibration_error(probs, labels, n_bins=15))
+
     metrics_out = {
         "n_test": int(len(labels)),
-        **{k: float(v) for k, v in metrics.items()},
+        "accuracy": accuracy,
+        "kappa_quadratic": qwk,
+        "nll": nll,
+        "brier": brier,
+        "ece_15bins": ece,
     }
     (args.output_dir / "metrics.json").write_text(json.dumps(metrics_out, indent=2))
     print(f"\nIDRiD external validation metrics:")
